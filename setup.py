@@ -17,17 +17,12 @@ see: https://bitbucket.org/anthony_tuininga/cx_freeze/
 
 '''
 import os
-import platform
 from cx_Freeze import setup, Executable
 from lib.version import __version__
 
-architecture = {'64bit': 'x86_64', '32bit': 'i386'}[platform.architecture()[0]]
-
-ccsv_fn = 'ccsv-{0}.cpython-35m-{0}-linux-gnu.so'.format(
-    {'64bit': 'x86_64', '32bit': 'i386'}[platform.architecture()[0]])
 
 build_exe_options = {
-    'build_exe': os.path.join('build', str(__version__)),
+    'build_exe': os.path.join('build', __version__),
     'packages': [
         'encodings',
         'os',
@@ -45,19 +40,20 @@ build_exe_options = {
         'pyleri',
         'prompt_toolkit',
         'pygments',
-        'json'],
+        'json',
+        'csvloader',
+        'siridb',
+        'qpack'],
     'excludes': [
         'django',
         'google',
         'twisted'],
     'optimize': 2,
-    'include_files': [
-        ('help', 'help'),
-        (os.path.join('ccsv', ccsv_fn), ccsv_fn)]}
+    'include_files': []}
 
 
 setup(
-    name='prompt',
+    name='siridb-prompt',
     version=__version__,
     description='Prompt for SiriDB',
     options={'build_exe': build_exe_options},

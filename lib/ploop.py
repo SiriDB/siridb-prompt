@@ -7,29 +7,25 @@ accepted you will get stuck in this loop until you quit.
 '''
 import os
 import sys
-import logging
 import asyncio
 import json
-from prompt_toolkit.shortcuts import prompt_async
-from prompt_toolkit.history import InMemoryHistory
+import logging
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.shortcuts import prompt_async
+from siridb.connector.lib.exceptions import InsertError
+from siridb.connector.lib.exceptions import QueryError
+from . import csvhandler
 from . import writer
+from .completer import confirm_completer
+from .completer import SiriCompleter
 from .history import clear_history
 from .history import crop_history
 from .history import get_history
-from .completer import SiriCompleter
-from .completer import confirm_completer
 from .manager import manager
 from .version import __version__
 from .version import __version_info__
 
-sys.path.append('/home/joente/workspace/siridb-connector/')
-from siridb.connector.lib.exceptions import QueryError
-from siridb.connector.lib.exceptions import InsertError
-
-class csvhandler:
-    def loads(self, *args, **kwargs):
-        raise NotImplementedError('Not yet implemented')
 
 __DEFAULT_OUTPUT = 'PRETTY'
 __IMPORT_MAP = {

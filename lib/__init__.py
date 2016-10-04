@@ -1,3 +1,3 @@
 '''
-Lib package for siridb-prompt.
+Libs for SiriDB Prompt.
 '''

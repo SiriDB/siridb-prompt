@@ -8,16 +8,16 @@ database.
 '''
 import sys
 import argparse
-import logging
 import asyncio
-import signal
+import logging
 import re
+import signal
 from prompt_toolkit import prompt
-from lib.ploop import prompt_loop, force_exit
-from lib.version import __version__
-
-sys.path.append('/home/joente/workspace/siridb-connector/')
 from siridb.connector import SiriDBClient
+from lib.ploop import prompt_loop, force_exit
+from lib.version import __email__
+from lib.version import __maintainer__
+from lib.version import __version__
 
 
 def signal_handler(*args):
@@ -87,8 +87,8 @@ SiriDB Prompt {version}
 Maintainer: {maintainer} <{email}>
 Home-page: http://siridb.net
         '''.strip().format(version=__version__,
-                           maintainer='Jeroen van der Heijden',
-                           email='jeroen@transceptor.technology'))
+                           maintainer=__maintainer__,
+                           email=__email__))
 
     logger = logging.getLogger()
     logger.setLevel(logging._nameToLevel[args.log_level.upper()])
