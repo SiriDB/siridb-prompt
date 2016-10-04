@@ -130,6 +130,10 @@ Home-page: http://siridb.net
         keepalive=True)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(prompt_loop(cluster))
+
+    try:
+        loop.run_until_complete(prompt_loop(cluster))
+    except:
+        pass
 
     sys.exit(0)

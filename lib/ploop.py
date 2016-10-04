@@ -21,7 +21,7 @@ from .completer import SiriCompleter
 from .completer import confirm_completer
 from .manager import manager
 from .version import __version__
-
+from .version import __version_info__
 
 sys.path.append('/home/joente/workspace/siridb-connector/')
 from siridb.connector.lib.exceptions import QueryError
@@ -130,7 +130,7 @@ async def prompt_loop(cluster):
         result = await cluster.query('show time_precision, version', timeout=5)
         writer.time_precision = result['data'][0]['value']
         version = result['data'][1]['value']
-        if version != __version__:
+        if tuple(map(int, version.split('.')[:2])) != __version_info__[:2]:
             logging.warning('SiriDB Prompt is version is version {} while at '
                             'least one server your connecting to is running '
                             'version {}. This is not necessary a problem but '
