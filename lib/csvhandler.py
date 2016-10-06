@@ -1,6 +1,6 @@
 '''CSV Handler module.
 
-When loading data from a CSV format we use ccsv to quickly parse the data.
+When loading data from a CSV format we use csvloader to quickly parse the data.
 After 'reading' the CSV data we need to translate the data into the correct
 series data format and that is what this module does.
 
@@ -67,7 +67,7 @@ def _from_flat_csv(grid):
 def loads(content):
     '''Load CSV data from string into a dictionary representing series with
     points.'''
-    grid = ccsv.loads(content.strip('\n'))
+    grid = csvloader.loads(content.strip('\n'))
     if not grid or not grid[0]:
         return []
 
