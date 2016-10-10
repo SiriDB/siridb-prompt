@@ -9,3 +9,4 @@ checklist.txt
 *.json
 *.csv
 build/
+cgrammar/
