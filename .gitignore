@@ -10,3 +10,4 @@ checklist.txt
 *.csv
 build/
 cgrammar/
+jsgrammar/

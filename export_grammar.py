@@ -26,3 +26,19 @@ if __name__ == '__main__':
         f.write(h_file)
 
     print('\nFinished creating new c-grammar files...\n')
+
+    js_file = siri_grammar.export_js()
+
+    EXPOTR_PATH = 'jsgrammar'
+
+    try:
+        os.makedirs(EXPOTR_PATH)
+    except FileExistsError:
+        pass
+
+    with open(os.path.join(EXPOTR_PATH, 'grammar.js'),
+            'w',
+            encoding='utf-8') as f:
+        f.write(js_file)
+
+    print('\nFinished creating new js-grammar file...\n')
