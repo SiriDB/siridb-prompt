@@ -492,6 +492,8 @@ class SiriGrammar(Grammar):
         set_port,
         most_greedy=False))
 
+    alter_servers = Sequence(k_servers, Optional(where_server), set_log_level)
+
     alter_user = Sequence(k_user, string, Choice(
         set_password,
         set_name,
@@ -567,6 +569,7 @@ class SiriGrammar(Grammar):
         alter_user,
         alter_group,
         alter_server,
+        alter_servers,
         alter_database,
         most_greedy=False))
 
