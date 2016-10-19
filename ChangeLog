@@ -1,0 +1,6 @@
+siridb-prompt (2.0.0) xenial; urgency=medium
+
+  * Initial version for SiriDB 2.0.x
+
+ -- Jeroen van der Heijden <jeroen@transceptor.technology>  Wed, 19 Oct 2016 13:04:10 +0000
+

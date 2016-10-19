@@ -1,6 +1,0 @@
-siridb-prompt (2.0.0) trusty; urgency=medium
-
-  * Initial version for SiriDB 2.0.x
-
- -- Jeroen van der Heijden <jeroen@transceptor.technology>  Thu, 04 Oct 2016 10:34:53 +0000
-

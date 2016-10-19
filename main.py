@@ -19,7 +19,6 @@ from lib.version import __email__
 from lib.version import __maintainer__
 from lib.version import __version__
 
-
 def signal_handler(*args):
     loop = asyncio.get_event_loop()
     if loop.is_running():
