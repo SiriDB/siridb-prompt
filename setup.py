@@ -38,11 +38,8 @@ build_exe_options = {
         'uuid',
         'pickle',
         'pyleri',
-        'prompt_toolkit',
-        'pygments',
         'json',
         'csvloader',
-        'siridb',
         'qpack'],
     'excludes': [
         'django',

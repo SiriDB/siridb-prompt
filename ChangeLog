@@ -1,3 +1,9 @@
+siridb-prompt (2.0.0-1) xenial; urgency=medium
+
+  * Removed pygments from setup requirement.
+
+ -- Jeroen van der Heijden <jeroen@transceptor.technology>  Wed, 19 Oct 2016 20:03:41 +0000
+
 siridb-prompt (2.0.0) xenial; urgency=medium
 
   * Initial version for SiriDB 2.0.x

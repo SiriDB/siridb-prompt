@@ -90,6 +90,7 @@ class SiriGrammar(Grammar):
         Token('&'),
         Keyword('intersection'),
         most_greedy=False)
+    k_ip_support = Keyword('ip_support')
     k_length = Keyword('length')
     k_libuv = Keyword('libuv')
     k_limit = Keyword('limit')
@@ -237,6 +238,7 @@ class SiriGrammar(Grammar):
         k_buffer_path,
         k_buffer_size,
         k_dbpath,
+        k_ip_support,
         k_libuv,
         k_name,
         k_port,
@@ -323,6 +325,7 @@ class SiriGrammar(Grammar):
             k_address,
             k_buffer_path,
             k_dbpath,
+            k_ip_support,
             k_libuv,
             k_name,
             k_uuid,
@@ -639,6 +642,7 @@ class SiriGrammar(Grammar):
         k_drop_threshold,
         k_duration_log,
         k_duration_num,
+        k_ip_support,
         k_libuv,
         k_log_level,
         k_max_open_files,

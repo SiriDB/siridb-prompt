@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 '''Export python grammar to C grammar files
 
 Author: Jeroen van der Heijden (Transceptor Technology)
