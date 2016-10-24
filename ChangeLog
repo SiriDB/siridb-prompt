@@ -1,6 +1,8 @@
-siridb-prompt (2.0.0-1) xenial; urgency=medium
+siridb-prompt (2.0.1) xenial; urgency=medium
 
-  * Removed pygments from setup requirement.
+  * Cleanup setup requirements.
+
+  * Added ip_support to grammar. (issue #1)
 
  -- Jeroen van der Heijden <jeroen@transceptor.technology>  Wed, 19 Oct 2016 20:03:41 +0000
 

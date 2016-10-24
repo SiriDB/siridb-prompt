@@ -13,10 +13,12 @@ from lib.version import __version__
 
 CHANGELOG_FILE = 'ChangeLog'
 
+
 def _get_changelog(version):
     with open('ChangeLog-{}'.format(version), 'r') as f:
         content = f.read()
     return content
+
 
 def _get_distribution():
     '''Returns distribution code name. (Ubuntu)'''

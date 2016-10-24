@@ -9,11 +9,12 @@ completion support.
 from prompt_toolkit.completion import Completer
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.contrib.completers import WordCompleter
-from .grammar import siri_grammar
+from .grammar import SiriGrammar
 from pyleri import Keyword
 
 
 confirm_completer = WordCompleter(['yes', 'no'])
+siri_grammar = SiriGrammar()
 
 
 class SiriCompleter(Completer):
