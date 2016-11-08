@@ -11,6 +11,7 @@ import re
 import argparse
 from lib.version import __version__
 
+
 CHANGELOG_FILE = 'ChangeLog'
 
 
