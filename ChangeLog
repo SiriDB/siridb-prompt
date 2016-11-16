@@ -1,3 +1,13 @@
+siridb-prompt (2.0.2) yakkety; urgency=medium
+
+  * Removed grammar as source form siridb-prompt. The grammar used in this
+    project used to be the original grammar source. We now use an export and
+    keep the original grammar in the siridb-server project.
+
+  * Update grammar (drop series).
+
+ -- Jeroen van der Heijden <jeroen@transceptor.technology>  Wed, 16 Nov 2016 16:14:40 +0000
+
 siridb-prompt (2.0.1) xenial; urgency=medium
 
   * Cleanup setup requirements.
