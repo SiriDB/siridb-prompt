@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['siridb-prompt.py'],
-             pathex=['/home/joente/workspace/siridb-prompt'],
+             pathex=['/home/joente/siridb-prompt'],
              binaries=None,
              datas=None,
              hiddenimports=[],
