@@ -40,7 +40,8 @@ build_exe_options = {
         'pyleri',
         'json',
         'csvloader',
-        'qpack'],
+        'qpack',
+        'siridb-connector'],
     'excludes': [
         'django',
         'google',
