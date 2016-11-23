@@ -41,7 +41,7 @@ build_exe_options = {
         'json',
         'csvloader',
         'qpack',
-        'siridb-connector'],
+        'siridb.connector'],
     'excludes': [
         'django',
         'google',
