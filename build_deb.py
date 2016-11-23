@@ -98,7 +98,14 @@ if __name__ == '__main__':
         ))
 
     # Run setup.py to create executable
-    subprocess.call(['python3', 'setup.py', 'build'])
+    subprocess.call(['[pyinstaller', 'siridb-prompt.py'])
+
+    while True:
+        x = input('Continue building deb package? (y/n)').lower()
+        if x == 'y':
+            break
+        if x == 'n':
+            exit(0)
 
     OVERRIDES = open(
         'deb/OVERRIDES', 'r').read().strip().format(**config)
