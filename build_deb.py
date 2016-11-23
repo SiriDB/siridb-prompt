@@ -98,7 +98,7 @@ if __name__ == '__main__':
         ))
 
     # Run setup.py to create executable
-    subprocess.call(['[pyinstaller', 'siridb-prompt.py'])
+    subprocess.call(['pyinstaller', 'siridb-prompt.py'])
 
     while True:
         x = input('Continue building deb package? (y/n)').lower()
