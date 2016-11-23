@@ -125,6 +125,10 @@ if __name__ == '__main__':
     if not os.path.isdir(source_path):
         sys.exit('ERROR: Cannot find path: {}'.format(source_path))
 
+    temp_path = os.path.join('build', 'temp')
+    if os.path.isdir(temp_path):
+        shutil.rmtree(temp_path)
+
     deb_file = '{package}_{version}_{architecture}.deb'.format(**config)
     source_deb = os.path.join(temp_path, deb_file)
     dest_deb = os.path.join('build', deb_file)
