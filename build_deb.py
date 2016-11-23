@@ -121,7 +121,7 @@ if __name__ == '__main__':
     RULES = open(
         'deb/RULES', 'r').read().strip()
 
-    source_path = os.path.join('dist')
+    source_path = os.path.join('dist', 'siridb-prompt')
     if not os.path.isdir(source_path):
         sys.exit('ERROR: Cannot find path: {}'.format(source_path))
 
