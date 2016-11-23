@@ -121,11 +121,7 @@ if __name__ == '__main__':
     RULES = open(
         'deb/RULES', 'r').read().strip()
 
-    temp_path = os.path.join('build', 'temp')
-    if os.path.isdir(temp_path):
-        shutil.rmtree(temp_path)
-
-    source_path = os.path.join('build', __version__)
+    source_path = os.path.join('dist')
     if not os.path.isdir(source_path):
         sys.exit('ERROR: Cannot find path: {}'.format(source_path))
 
