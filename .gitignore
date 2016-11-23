@@ -9,5 +9,6 @@ checklist.txt
 *.json
 *.csv
 build/
+dist/
 cgrammar/
 jsgrammar/
