@@ -1,0 +1,4 @@
+prompt-toolkit
+siridb-connector
+pyleri
+csvloader
