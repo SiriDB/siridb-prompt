@@ -12,6 +12,7 @@ import asyncio
 import logging
 import re
 import signal
+import encodings.idna  # fixes idna encoding error
 from prompt_toolkit import prompt
 from siridb.connector import SiriDBClient
 from lib.ploop import prompt_loop, force_exit
