@@ -30,6 +30,7 @@ $ siridb-prompt -u user -d database
 That's it! You are in.
 
 When finished you can close your SSH tunnel:
+
 get it into foreground: press `fg` and you will get the response:  
 ```bash
 ssh login@server -L 9000:127.0.0.1:9000 -N
