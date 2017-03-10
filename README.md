@@ -25,7 +25,7 @@ to set it in background, type `bg` and you should get response:
 ```
 Connect to SiriDB as if it is running on your local system (localhost:9000) for example by running the following command in the terminal window:
 ```bash
-$ siridb-prompt -p -u user -d database
+$ siridb-prompt -u user -d database
 ```
 That's it! You are in.
 
