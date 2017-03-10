@@ -17,7 +17,7 @@ login@server password:
 Now when the tunnel is built stop the previous command and set it into background to be able to initiate other commands.
 press `Ctrl+Z` to stop the command and you should get response:
 ```bash
-[1]+ Stopped        ssh login@server -L 9000:127.0.0.1:3306 -N
+[1]+ Stopped        ssh login@server -L 9000:127.0.0.1:9000 -N
 ```
 to set it in background, type `bg` and you should get response:
 ```bash
