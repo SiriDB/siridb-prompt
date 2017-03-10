@@ -11,7 +11,7 @@ $ ssh login@server -L 9000:127.0.0.1:9000 -N
 
 You will get response asking you to enter your SSH password
 ```bash
-login@server's password:
+login@server password:
 ```
 
 Now when the tunnel is built stop the previous command and set it into background to be able to initiate other commands.
