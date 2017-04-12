@@ -1,3 +1,9 @@
+siridb-prompt (2.0.3) xenial; urgency=medium
+
+  * Update grammer with limit support. (issue #2)
+
+ -- Jeroen van der Heijden <jeroen@transceptor.technology>  Tue, 28 Feb 2017 15:19:51 +0000
+
 siridb-prompt (2.0.2) yakkety; urgency=medium
 
   * Removed grammar as source form siridb-prompt. The grammar used in this
