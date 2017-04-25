@@ -99,6 +99,8 @@ _COUNT_MAP = {
 }
 
 _FMT_MAP = {
+    'list_limit': fmt_large_num,
+    'select_points_limit': fmt_large_num,
     'received_points': fmt_large_num,
     'series': fmt_large_num,
     'mem_usage': fmt_size_mb,
