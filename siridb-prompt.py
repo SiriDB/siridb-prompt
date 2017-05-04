@@ -19,6 +19,8 @@ from lib.ploop import prompt_loop, force_exit
 from lib.version import __email__
 from lib.version import __maintainer__
 from lib.version import __version__
+from lib.utils import get_hostlist
+
 
 def signal_handler(*args):
     loop = asyncio.get_event_loop()
@@ -114,13 +116,10 @@ Home-page: http://siridb.net
         signal_handler()
 
     try:
-        hostlist = [(server.strip(), int(port))
-                    for server, port
-                    in [s.split(':')
-                        for s in re.split(r'\s+|\s*,\s*', args.servers)]]
+        hostlist = get_hostlist(args.servers)
     except ValueError:
         sys.exit('Invalid servers, expecting something like: '
-                 'server1.local:9000,server2.local:9000 ...')
+                 'server1.local:9000,[::1]:9000 ...')
 
     cluster = SiriDBClient(
         username=args.user,

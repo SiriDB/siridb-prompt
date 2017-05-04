@@ -195,7 +195,7 @@ async def prompt_loop(cluster):
                 method = cluster.insert
 
         try:
-            result = await method(inp)
+            result = await method(inp, timeout=600)
         except (QueryError, InsertError) as e:
             writer.error(e)
         except TimeoutError as e:
