@@ -66,9 +66,10 @@ if __name__ == '__main__':
         '--servers',
         type=str,
         default='localhost:9000',
-        help='Servers to connect to. A host should be entered like '
-        '<hostname_or_ip>:<port> Multiple hosts can be provided and should be '
-        'separated with comma\'s or spaces.')
+        help='Server(s) to connect to. Multiple hosts can be provided and '
+        'should be separated with comma\'s or spaces. '
+        'Each host should be entered like: '
+        '<hostname_or_ipv4_or_[ipv6]>:<port>')
 
     parser.add_argument(
         '-l', '--log-level',
