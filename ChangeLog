@@ -1,3 +1,11 @@
+siridb-prompt (2.0.5) xenial; urgency=medium
+
+  * Changed query and insert timeout to 10 minutes.
+
+  * Added IPv6 support. (issue #4)
+
+ -- Jeroen van der Heijden <jeroen@transceptor.technology>  Thu, 04 May 2017 20:02:44 +0000
+
 siridb-prompt (2.0.4) xenial; urgency=medium
 
   * Changed link location from /usr/sbin to /usr/local/bin in deb package.
