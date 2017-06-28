@@ -157,7 +157,7 @@ def print_table(columns, rows, max_rows=None, fmt_by_column=True, sort=True):
 def output_list(result):
     columns = result['columns']
     for opt in ('servers', 'series', 'shards', 'groups', 'pools', 'users',
-                'networks'):
+                'networks', 'tags'):
         rows = result.get(opt)
         if rows is not None:
             break
@@ -245,7 +245,8 @@ def output_pretty(result):
     #
     else:
         for name in ('shards', 'series', 'servers', 'groups', 'pools', 'users',
-                     'servers_received_points', 'shards_size', 'series_length'):
+                     'servers_received_points', 'shards_size',
+                     'series_length', 'tags'):
             if name in result and \
                     isinstance(result[name], int):
                 print('{}: {}\n'.format(
