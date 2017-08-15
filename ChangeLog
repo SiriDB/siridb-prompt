@@ -1,3 +1,9 @@
+siridb-prompt (2.0.6) xenial; urgency=medium
+
+  * Update grammar with fifo_files and selected_points properties. (issue #5)
+
+ -- Jeroen van der Heijden <jeroen@transceptor.technology>  Tue, 15 Aug 2017 07:59:17 +0000
+
 siridb-prompt (2.0.5) xenial; urgency=medium
 
   * Changed query and insert timeout to 10 minutes.
