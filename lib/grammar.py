@@ -3,21 +3,21 @@
  should be used with the pyleri python module.
 
  Source class: SiriGrammar
- Created at: 2017-04-24 20:23:17
+ Created at: 2017-08-14 15:06:00
 """
 import re
-from pyleri import Prio
-from pyleri import Token
-from pyleri import Tokens
-from pyleri import Choice
-from pyleri import Sequence
-from pyleri import List
-from pyleri import Repeat
-from pyleri import THIS
-from pyleri import Grammar
 from pyleri import Optional
-from pyleri import Keyword
+from pyleri import Choice
+from pyleri import Prio
+from pyleri import Grammar
+from pyleri import THIS
 from pyleri import Regex
+from pyleri import Tokens
+from pyleri import List
+from pyleri import Token
+from pyleri import Repeat
+from pyleri import Sequence
+from pyleri import Keyword
 
 class SiriGrammar(Grammar):
     
@@ -61,6 +61,7 @@ class SiriGrammar(Grammar):
     k_error = Keyword('error')
     k_expression = Keyword('expression')
     k_false = Keyword('false')
+    k_fifo_files = Keyword('fifo_files')
     k_filter = Keyword('filter')
     k_float = Keyword('float')
     k_for = Keyword('for')
@@ -118,6 +119,7 @@ class SiriGrammar(Grammar):
     k_revoke = Keyword('revoke')
     k_select = Keyword('select')
     k_select_points_limit = Keyword('select_points_limit')
+    k_selected_points = Keyword('selected_points')
     k_series = Keyword('series')
     k_server = Keyword('server')
     k_servers = Keyword('servers')
@@ -256,12 +258,14 @@ class SiriGrammar(Grammar):
         k_startup_time,
         k_status,
         k_active_handles,
+        k_fifo_files,
         k_log_level,
         k_max_open_files,
         k_mem_usage,
         k_open_files,
         k_received_points,
         k_reindex_progress,
+        k_selected_points,
         k_sync_progress,
         k_uptime,
         most_greedy=False), Token(','), 1, None, False)
@@ -398,6 +402,7 @@ class SiriGrammar(Grammar):
                 Choice(
                     k_active_handles,
                     k_buffer_size,
+                    k_fifo_files,
                     k_port,
                     k_pool,
                     k_startup_time,
@@ -405,6 +410,7 @@ class SiriGrammar(Grammar):
                     k_mem_usage,
                     k_open_files,
                     k_received_points,
+                    k_selected_points,
                     k_uptime,
                     most_greedy=False),
                 int_operator,
@@ -842,6 +848,11 @@ class SiriGrammar(Grammar):
         k_received_points,
         Optional(where_server)
     )
+    count_servers_selected = Sequence(
+        k_servers,
+        k_selected_points,
+        Optional(where_server)
+    )
     count_shards = Sequence(
         k_shards,
         Optional(where_shard)
@@ -954,6 +965,7 @@ class SiriGrammar(Grammar):
             count_series,
             count_servers,
             count_servers_received,
+            count_servers_selected,
             count_shards,
             count_shards_size,
             count_users,
@@ -1029,6 +1041,7 @@ class SiriGrammar(Grammar):
             k_drop_threshold,
             k_duration_log,
             k_duration_num,
+            k_fifo_files,
             k_ip_support,
             k_libuv,
             k_list_limit,
@@ -1039,6 +1052,7 @@ class SiriGrammar(Grammar):
             k_pool,
             k_received_points,
             k_reindex_progress,
+            k_selected_points,
             k_select_points_limit,
             k_server,
             k_startup_time,
@@ -1053,8 +1067,62 @@ class SiriGrammar(Grammar):
             most_greedy=False), Token(','), 0, None, False)
     )
     timeit_stmt = Repeat(k_timeit, 1, 1)
-    help_select = Keyword('select')
+    help_show = Keyword('show')
+    help_revoke = Keyword('revoke')
+    help_noaccess = Keyword('noaccess')
+    help_functions = Keyword('functions')
     help_grant = Keyword('grant')
+    help_access = Keyword('access')
+    help_list_users = Keyword('users')
+    help_list_pools = Keyword('pools')
+    help_list_series = Keyword('series')
+    help_list_servers = Keyword('servers')
+    help_list_groups = Keyword('groups')
+    help_list_shards = Keyword('shards')
+    help_list = Sequence(
+        k_list,
+        Optional(Choice(
+            help_list_users,
+            help_list_pools,
+            help_list_series,
+            help_list_servers,
+            help_list_groups,
+            help_list_shards,
+            most_greedy=True))
+    )
+    help_alter_database = Keyword('database')
+    help_alter_group = Keyword('group')
+    help_alter_servers = Keyword('servers')
+    help_alter_server = Keyword('server')
+    help_alter_user = Keyword('user')
+    help_alter = Sequence(
+        k_alter,
+        Optional(Choice(
+            help_alter_database,
+            help_alter_group,
+            help_alter_servers,
+            help_alter_server,
+            help_alter_user,
+            most_greedy=True))
+    )
+    help_count_series = Keyword('series')
+    help_count_servers = Keyword('servers')
+    help_count_groups = Keyword('groups')
+    help_count_shards = Keyword('shards')
+    help_count_users = Keyword('users')
+    help_count_pools = Keyword('pools')
+    help_count = Sequence(
+        k_count,
+        Optional(Choice(
+            help_count_series,
+            help_count_servers,
+            help_count_groups,
+            help_count_shards,
+            help_count_users,
+            help_count_pools,
+            most_greedy=True))
+    )
+    help_select = Keyword('select')
     help_create_group = Keyword('group')
     help_create_user = Keyword('user')
     help_create = Sequence(
@@ -1064,94 +1132,40 @@ class SiriGrammar(Grammar):
             help_create_user,
             most_greedy=True))
     )
-    help_functions = Keyword('functions')
     help_timezones = Keyword('timezones')
     help_drop_group = Keyword('group')
+    help_drop_user = Keyword('user')
+    help_drop_server = Keyword('server')
     help_drop_series = Keyword('series')
     help_drop_shards = Keyword('shards')
-    help_drop_server = Keyword('server')
-    help_drop_user = Keyword('user')
     help_drop = Sequence(
         k_drop,
         Optional(Choice(
             help_drop_group,
+            help_drop_user,
+            help_drop_server,
             help_drop_series,
             help_drop_shards,
-            help_drop_server,
-            help_drop_user,
             most_greedy=True))
     )
-    help_access = Keyword('access')
-    help_list_series = Keyword('series')
-    help_list_servers = Keyword('servers')
-    help_list_pools = Keyword('pools')
-    help_list_users = Keyword('users')
-    help_list_groups = Keyword('groups')
-    help_list_shards = Keyword('shards')
-    help_list = Sequence(
-        k_list,
-        Optional(Choice(
-            help_list_series,
-            help_list_servers,
-            help_list_pools,
-            help_list_users,
-            help_list_groups,
-            help_list_shards,
-            most_greedy=True))
-    )
-    help_alter_user = Keyword('user')
-    help_alter_database = Keyword('database')
-    help_alter_server = Keyword('server')
-    help_alter_group = Keyword('group')
-    help_alter_servers = Keyword('servers')
-    help_alter = Sequence(
-        k_alter,
-        Optional(Choice(
-            help_alter_user,
-            help_alter_database,
-            help_alter_server,
-            help_alter_group,
-            help_alter_servers,
-            most_greedy=True))
-    )
-    help_count_groups = Keyword('groups')
-    help_count_pools = Keyword('pools')
-    help_count_users = Keyword('users')
-    help_count_shards = Keyword('shards')
-    help_count_series = Keyword('series')
-    help_count_servers = Keyword('servers')
-    help_count = Sequence(
-        k_count,
-        Optional(Choice(
-            help_count_groups,
-            help_count_pools,
-            help_count_users,
-            help_count_shards,
-            help_count_series,
-            help_count_servers,
-            most_greedy=True))
-    )
-    help_noaccess = Keyword('noaccess')
     help_timeit = Keyword('timeit')
-    help_show = Keyword('show')
-    help_revoke = Keyword('revoke')
     help = Sequence(
         k_help,
         Optional(Choice(
-            help_select,
-            help_grant,
-            help_create,
+            help_show,
+            help_revoke,
+            help_noaccess,
             help_functions,
-            help_timezones,
-            help_drop,
+            help_grant,
             help_access,
             help_list,
             help_alter,
             help_count,
-            help_noaccess,
+            help_select,
+            help_create,
+            help_timezones,
+            help_drop,
             help_timeit,
-            help_show,
-            help_revoke,
             most_greedy=True))
     )
     START = Sequence(

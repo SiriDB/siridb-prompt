@@ -245,7 +245,8 @@ def output_pretty(result):
     #
     else:
         for name in ('shards', 'series', 'servers', 'groups', 'pools', 'users',
-                     'servers_received_points', 'shards_size', 'series_length'):
+                     'servers_received_points', 'servers_selected_points',
+                     'shards_size', 'series_length'):
             if name in result and \
                     isinstance(result[name], int):
                 print('{}: {}\n'.format(
