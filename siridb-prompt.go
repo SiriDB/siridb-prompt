@@ -1,10 +1,31 @@
 package main
 
 import (
-	"unicode/utf8"
+	"fmt"
+	"math/rand"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/transceptor-technology/go-siridb-connector"
+
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
+
+	runewidth "github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
+)
+
+// AppVersion exposes version information
+const AppVersion = "2.1.0"
+
+var (
+	xApp      = kingpin.New("siridb-admin", "Tool for communicating with a SiriDB database.")
+	xUser     = xApp.Flag("user", "Database user.").Short('u').String()
+	xPassword = xApp.Flag("password", "Password for the database user.").Short('p').String()
+	xDbname   = xApp.Flag("dbname", "Database name.").Short('d').String()
+	xServers  = xApp.Flag("servers", "Server(s) to connect to. Multiple servers are allowed and should be separated with a comma. (syntax: --servers=host[:port]").Short('s').String()
+	xVersion  = xApp.Flag("version", "Print version information and exit.").Short('v').Bool()
 )
 
 func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
@@ -14,255 +35,220 @@ func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
 	}
 }
 
-func fill(x, y, w, h int, cell termbox.Cell) {
-	for ly := 0; ly < h; ly++ {
-		for lx := 0; lx < w; lx++ {
-			termbox.SetCell(x+lx, y+ly, cell.Ch, cell.Fg, cell.Bg)
+type server struct {
+	host string
+	port uint16
+}
+
+type logEntry struct {
+	dtime time.Time
+	msg   string
+}
+
+type logView struct {
+	pos     int
+	entries []logEntry
+}
+
+var logger = logView{pos: -1, entries: make([]logEntry, 0)}
+
+var client *siridb.Client
+
+const cViewLog = 0
+const cViewOutput = 1
+
+var currentView = cViewLog
+var X = 8
+
+func getHostAndPort(addr string) (server, error) {
+	parts := strings.Split(addr, ":")
+	// IPv4
+	if len(parts) == 1 {
+		return server{parts[0], 9000}, nil
+	}
+	if len(parts) == 2 {
+		u, err := strconv.ParseUint(parts[1], 10, 16)
+		return server{parts[0], uint16(u)}, err
+	}
+	// IPv6
+	if addr[0] != '[' {
+		return server{fmt.Sprintf("[%s]", addr), 9000}, nil
+	}
+	if addr[len(addr)-1] == ']' {
+		return server{addr, 9000}, nil
+	}
+	u, err := strconv.ParseUint(parts[len(parts)-1], 10, 16)
+	addr = strings.Join(parts[:len(parts)-1], ":")
+
+	return server{addr, uint16(u)}, err
+}
+
+func getServers(addrstr string) ([]server, error) {
+	arr := strings.Split(addrstr, ",")
+	servers := make([]server, len(arr))
+	for i, addr := range arr {
+		addr = strings.TrimSpace(addr)
+		server, err := getHostAndPort(addr)
+		if err != nil {
+			return nil, err
 		}
+		servers[i] = server
 	}
+	return servers, nil
 }
 
-func rune_advance_len(r rune, pos int) int {
-	if r == '\t' {
-		return tabstop_length - pos%tabstop_length
+func serversToInterface(servers []server) [][]interface{} {
+	ret := make([][]interface{}, len(servers))
+	for i, svr := range servers {
+		ret[i] = make([]interface{}, 2)
+		ret[i][0] = svr.host
+		ret[i][1] = int(svr.port)
 	}
-	return runewidth.RuneWidth(r)
+	return ret
 }
 
-func voffset_coffset(text []byte, boffset int) (voffset, coffset int) {
-	text = text[:boffset]
-	for len(text) > 0 {
-		r, size := utf8.DecodeRune(text)
-		text = text[size:]
-		coffset += 1
-		voffset += rune_advance_len(r, voffset)
+func quit(err error) {
+	rc := 0
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		rc = 1
 	}
-	return
-}
 
-func byte_slice_grow(s []byte, desired_cap int) []byte {
-	if cap(s) < desired_cap {
-		ns := make([]byte, len(s), desired_cap)
-		copy(ns, s)
-		return ns
+	if client != nil {
+		client.Close()
 	}
-	return s
+
+	os.Exit(rc)
 }
 
-func byte_slice_remove(text []byte, from, to int) []byte {
-	size := to - from
-	copy(text[from:], text[to:])
-	text = text[:len(text)-size]
-	return text
-}
-
-func byte_slice_insert(text []byte, offset int, what []byte) []byte {
-	n := len(text) + len(what)
-	text = byte_slice_grow(text, n)
-	text = text[:n]
-	copy(text[offset+len(what):], text[offset:])
-	copy(text[offset:], what)
-	return text
-}
-
-const preferred_horizontal_threshold = 5
-const tabstop_length = 8
-
-type EditBox struct {
-	text           []byte
-	line_voffset   int
-	cursor_boffset int // cursor offset in bytes
-	cursor_voffset int // visual cursor offset in termbox cells
-	cursor_coffset int // cursor offset in unicode code points
-}
-
-// Draws the EditBox in the given location, 'h' is not used at the moment
-func (eb *EditBox) Draw(x, y, w, h int) {
-	eb.AdjustVOffset(w)
-
-	const coldef = termbox.ColorDefault
-	fill(x, y, w, h, termbox.Cell{Ch: ' '})
-
-	t := eb.text
-	lx := 0
-	tabstop := 0
+func logHandle(logCh chan string) {
 	for {
-		rx := lx - eb.line_voffset
-		if len(t) == 0 {
-			break
-		}
-
-		if lx == tabstop {
-			tabstop += tabstop_length
-		}
-
-		if rx >= w {
-			termbox.SetCell(x+w-1, y, '→',
-				coldef, coldef)
-			break
-		}
-
-		r, size := utf8.DecodeRune(t)
-		if r == '\t' {
-			for ; lx < tabstop; lx++ {
-				rx = lx - eb.line_voffset
-				if rx >= w {
-					goto next
-				}
-
-				if rx >= 0 {
-					termbox.SetCell(x+rx, y, ' ', coldef, coldef)
-				}
-			}
-		} else {
-			if rx >= 0 {
-				termbox.SetCell(x+rx, y, r, coldef, coldef)
-			}
-			lx += runewidth.RuneWidth(r)
-		}
-	next:
-		t = t[size:]
-	}
-
-	if eb.line_voffset != 0 {
-		termbox.SetCell(x, y, '←', coldef, coldef)
+		msg := <-logCh
+		logger.entries = append(logger.entries, logEntry{time.Now(), msg})
+		draw()
 	}
 }
 
-// Adjusts line visual offset to a proper value depending on width
-func (eb *EditBox) AdjustVOffset(width int) {
-	ht := preferred_horizontal_threshold
-	max_h_threshold := (width - 1) / 2
-	if ht > max_h_threshold {
-		ht = max_h_threshold
-	}
-
-	threshold := width - 1
-	if eb.line_voffset != 0 {
-		threshold = width - ht
-	}
-	if eb.cursor_voffset-eb.line_voffset >= threshold {
-		eb.line_voffset = eb.cursor_voffset + (ht - width + 1)
-	}
-
-	if eb.line_voffset != 0 && eb.cursor_voffset-eb.line_voffset < ht {
-		eb.line_voffset = eb.cursor_voffset - ht
-		if eb.line_voffset < 0 {
-			eb.line_voffset = 0
-		}
-	}
-}
-
-func (eb *EditBox) MoveCursorTo(boffset int) {
-	eb.cursor_boffset = boffset
-	eb.cursor_voffset, eb.cursor_coffset = voffset_coffset(eb.text, boffset)
-}
-
-func (eb *EditBox) RuneUnderCursor() (rune, int) {
-	return utf8.DecodeRune(eb.text[eb.cursor_boffset:])
-}
-
-func (eb *EditBox) RuneBeforeCursor() (rune, int) {
-	return utf8.DecodeLastRune(eb.text[:eb.cursor_boffset])
-}
-
-func (eb *EditBox) MoveCursorOneRuneBackward() {
-	if eb.cursor_boffset == 0 {
-		return
-	}
-	_, size := eb.RuneBeforeCursor()
-	eb.MoveCursorTo(eb.cursor_boffset - size)
-}
-
-func (eb *EditBox) MoveCursorOneRuneForward() {
-	if eb.cursor_boffset == len(eb.text) {
-		return
-	}
-	_, size := eb.RuneUnderCursor()
-	eb.MoveCursorTo(eb.cursor_boffset + size)
-}
-
-func (eb *EditBox) MoveCursorToBeginningOfTheLine() {
-	eb.MoveCursorTo(0)
-}
-
-func (eb *EditBox) MoveCursorToEndOfTheLine() {
-	eb.MoveCursorTo(len(eb.text))
-}
-
-func (eb *EditBox) DeleteRuneBackward() {
-	if eb.cursor_boffset == 0 {
-		return
-	}
-
-	eb.MoveCursorOneRuneBackward()
-	_, size := eb.RuneUnderCursor()
-	eb.text = byte_slice_remove(eb.text, eb.cursor_boffset, eb.cursor_boffset+size)
-}
-
-func (eb *EditBox) DeleteRuneForward() {
-	if eb.cursor_boffset == len(eb.text) {
-		return
-	}
-	_, size := eb.RuneUnderCursor()
-	eb.text = byte_slice_remove(eb.text, eb.cursor_boffset, eb.cursor_boffset+size)
-}
-
-func (eb *EditBox) DeleteTheRestOfTheLine() {
-	eb.text = eb.text[:eb.cursor_boffset]
-}
-
-func (eb *EditBox) InsertRune(r rune) {
-	var buf [utf8.UTFMax]byte
-	n := utf8.EncodeRune(buf[:], r)
-	eb.text = byte_slice_insert(eb.text, eb.cursor_boffset, buf[:n])
-	eb.MoveCursorOneRuneForward()
-}
-
-// Please, keep in mind that cursor depends on the value of line_voffset, which
-// is being set on Draw() call, so.. call this method after Draw() one.
-func (eb *EditBox) CursorX() int {
-	return eb.cursor_voffset - eb.line_voffset
-}
-
-var edit_box EditBox
-
-const edit_box_width = 30
-
-func redraw_all() {
+func draw() {
 	const coldef = termbox.ColorDefault
 	termbox.Clear(coldef, coldef)
 	w, h := termbox.Size()
+	x := 0
 
-	midy := h / 2
-	midx := (w - edit_box_width) / 2
+	var s, tmp string
+	var fg termbox.Attribute
 
-	// unicode box drawing chars around the edit box
-	termbox.SetCell(midx-1, midy, '│', coldef, coldef)
-	termbox.SetCell(midx+edit_box_width, midy, '│', coldef, coldef)
-	termbox.SetCell(midx-1, midy-1, '┌', coldef, coldef)
-	termbox.SetCell(midx-1, midy+1, '└', coldef, coldef)
-	termbox.SetCell(midx+edit_box_width, midy-1, '┐', coldef, coldef)
-	termbox.SetCell(midx+edit_box_width, midy+1, '┘', coldef, coldef)
-	fill(midx, midy-1, edit_box_width, 1, termbox.Cell{Ch: '─'})
-	fill(midx, midy+1, edit_box_width, 1, termbox.Cell{Ch: '─'})
+	if currentView == cViewLog {
+		s = " Connection Log (ESC or CTRL+L to close)"
+	} else {
+		s = " Output (CTRL+L to open connection log, CTRL+C to quit)"
+	}
+	for _, c := range s {
+		termbox.SetCell(x, 0, c, termbox.ColorBlack, termbox.ColorWhite)
+		x++
+	}
+	s = fmt.Sprintf(" <%s@%s> status: ", *xUser, *xDbname)
+	if client.IsAvailable() {
+		tmp = "OK "
+		fg = termbox.ColorGreen
+	} else {
+		tmp = "NO CONNECTION "
+		fg = termbox.ColorRed
+	}
+	end := w - len(s) - len(tmp)
+	for ; x < end; x++ {
+		termbox.SetCell(x, 0, ' ', termbox.ColorBlack, termbox.ColorWhite)
+	}
 
-	edit_box.Draw(midx, midy, edit_box_width, 1)
-	termbox.SetCursor(midx+edit_box.CursorX(), midy)
+	for _, c := range s {
+		termbox.SetCell(x, 0, c, termbox.ColorBlack, termbox.ColorWhite)
+		x++
+	}
 
-	tbprint(midx+6, midy+3, coldef, coldef, "Press ESC to quit")
+	for _, c := range tmp {
+		termbox.SetCell(x, 0, c, fg, termbox.ColorWhite)
+		x++
+	}
+
+	if currentView == cViewLog {
+		y := 1
+		pos := logger.pos
+		if pos == -1 {
+			pos = len(logger.entries)
+		}
+		start := pos - (h - 1)
+
+		if start < 0 {
+			start = 0
+		}
+
+		for _, entry := range logger.entries[start:pos] {
+			x = 0
+			s = fmt.Sprintf("%s %s", entry.dtime.Format(time.UnixDate), entry.msg)
+			for _, c := range s {
+				termbox.SetCell(x, y, c, coldef, coldef)
+				x++
+			}
+			y++
+
+		}
+	}
+
 	termbox.Flush()
 }
 
 func main() {
-	err := termbox.Init()
+	rand.Seed(time.Now().Unix())
+
+	_, err := xApp.Parse(os.Args[1:])
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
+	}
+
+	if *xVersion {
+		fmt.Printf("Version: %s\n", AppVersion)
+		os.Exit(0)
+	}
+
+	err = termbox.Init()
 	if err != nil {
 		panic(err)
 	}
 	defer termbox.Close()
-	termbox.SetInputMode(termbox.InputEsc)
+	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
 
-	redraw_all()
+	logCh := make(chan string)
+
+	go logHandle(logCh)
+
+	var servers []server
+	servers, err = getServers("localhost:9000")
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
+	}
+
+	*xUser = "iris"
+	*xPassword = "siri"
+	*xDbname = "dbtest"
+
+	client = siridb.NewClient(
+		*xUser,                      // user
+		*xPassword,                  // password
+		*xDbname,                    // database
+		serversToInterface(servers), // siridb server(s)
+		logCh, // optional log channel
+	)
+
+	client.Connect()
+
+	defer client.Close()
+
+	draw()
+
+	const coldef = termbox.ColorDefault
+
 mainloop:
 	for {
 		switch ev := termbox.PollEvent(); ev.Type {
@@ -270,32 +256,38 @@ mainloop:
 			switch ev.Key {
 			case termbox.KeyEsc:
 				break mainloop
-			case termbox.KeyArrowLeft, termbox.KeyCtrlB:
-				edit_box.MoveCursorOneRuneBackward()
-			case termbox.KeyArrowRight, termbox.KeyCtrlF:
-				edit_box.MoveCursorOneRuneForward()
-			case termbox.KeyBackspace, termbox.KeyBackspace2:
-				edit_box.DeleteRuneBackward()
-			case termbox.KeyDelete, termbox.KeyCtrlD:
-				edit_box.DeleteRuneForward()
-			case termbox.KeyTab:
-				edit_box.InsertRune('\t')
-			case termbox.KeySpace:
-				edit_box.InsertRune(' ')
-			case termbox.KeyCtrlK:
-				edit_box.DeleteTheRestOfTheLine()
-			case termbox.KeyHome, termbox.KeyCtrlA:
-				edit_box.MoveCursorToBeginningOfTheLine()
-			case termbox.KeyEnd, termbox.KeyCtrlE:
-				edit_box.MoveCursorToEndOfTheLine()
+
 			default:
 				if ev.Ch != 0 {
-					edit_box.InsertRune(ev.Ch)
+					fmt.Println(ev.Ch)
+					termbox.Clear(coldef, coldef)
+					termbox.SetCell(X, 8, '!', coldef, coldef)
+					termbox.Flush()
+				}
+			}
+		case termbox.EventMouse:
+			switch ev.Key {
+			case termbox.MouseWheelUp:
+				if currentView == cViewLog {
+					if logger.pos > 0 {
+						logger.pos--
+					} else if logger.pos == -1 {
+						logger.pos = len(logger.entries) - 1
+					}
+				}
+			case termbox.MouseWheelDown:
+				if currentView == cViewLog {
+					if logger.pos != -1 {
+						logger.pos++
+					}
+					if logger.pos >= len(logger.entries) {
+						logger.pos = -1
+					}
 				}
 			}
 		case termbox.EventError:
 			panic(ev.Err)
 		}
-		redraw_all()
+		draw()
 	}
 }
