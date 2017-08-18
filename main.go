@@ -61,7 +61,7 @@ func logHandle(logCh chan string) {
 }
 
 func draw() {
-
+	termbox.SetOutputMode(termbox.Output256)
 	termbox.Clear(coldef, coldef)
 	w, h := termbox.Size()
 	x := 0
@@ -105,7 +105,7 @@ func draw() {
 		logger.draw(w, h)
 	} else {
 		outv.draw(w, h)
-		outPrompt.draw(0, h-1, w, coldef, coldef)
+		outPrompt.draw(0, h-1, w, h, coldef, coldef)
 	}
 
 	termbox.Flush()
@@ -145,7 +145,7 @@ func toClipboard() {
 	}
 }
 
-func getCompletions(p *prompt) []completion {
+func getCompletions(p *prompt) []*completion {
 	q := p.textBeforeCursor()
 	res, err := siriGrammar.Parse(q)
 	if err != nil {
@@ -153,25 +153,27 @@ func getCompletions(p *prompt) []completion {
 		return nil
 	}
 
-	var completions []completion
+	var completions []*completion
 	rest := q[res.Pos():]
 	if strings.HasPrefix("exit", q) {
-		completions = append(completions, completion{
+		compl := completion{
 			text:     "exit",
 			display:  "exit",
 			startPos: -len(q),
-		})
+		}
+		completions = append(completions, &compl)
 	}
 
 	for _, elem := range res.GetExpecting() {
 		if kw, ok := elem.(*goleri.Keyword); ok {
 			word := kw.GetKeyword()
 			if len(rest) == 0 && len(q) > 0 && q[len(q)-1] == ' ' || len(rest) > 0 && strings.HasPrefix(word, rest) {
-				completions = append(completions, completion{
+				compl := completion{
 					text:     fmt.Sprintf("%s ", word),
 					display:  word,
 					startPos: -len(rest),
-				})
+				}
+				completions = append(completions, &compl)
 			}
 		}
 	}
@@ -205,10 +207,9 @@ func main() {
 	go logHandle(logCh)
 
 	var servers []server
-	servers, err = getServers("localhost:9000,localhost:9001")
+	servers, err = getServers("localhost:9000")
 	if err != nil {
-		fmt.Printf("%s\n", err)
-		os.Exit(1)
+		logger.append(fmt.Sprintf("error reading servers: %s", err))
 	}
 
 	if len(*xUser) == 0 {
