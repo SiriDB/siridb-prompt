@@ -17,6 +17,7 @@ type completion struct {
 type box struct {
 	completions []*completion
 	selected    int
+	iStart      int
 }
 
 type prompt struct {
@@ -37,7 +38,10 @@ func newPrompt(prefix string, fg, bg termbox.Attribute) *prompt {
 		fg:        fg,
 		bg:        bg,
 		completer: nil,
-		popup:     box{nil, 1},
+		popup: box{
+			completions: nil,
+			selected:    -1,
+		},
 	}
 	return &p
 }
@@ -51,19 +55,30 @@ func (b *box) draw(x, y, w, h int) {
 	var fg, bg termbox.Attribute
 
 	n := len(b.completions)
-	if n == 0 || y-n < 2 {
+	if n == 0 {
 		return
 	}
+
 	width := b.getWidth()
 	xoffset := x + width + 2 - w
 	if xoffset > 0 {
 		x -= xoffset
 	}
-	y -= n
 
-	for j, compl := range b.completions {
+	start := 0
+	end := n
+	m := min(n, y-1)
+	if n > m {
+		if b.selected >= m {
+			start = b.selected - m + 1
+		}
+		end = m + start
+	}
+	y -= m
+
+	for j, compl := range b.completions[start:end] {
 		runes := []rune(fmt.Sprintf(" %-*s ", width, compl.display))
-		if j == b.selected {
+		if j+start == b.selected {
 			fg = cPopupSelectFg
 			bg = cPopupSelectBg
 		} else {
@@ -84,6 +99,40 @@ func (b *box) getWidth() int {
 	return width
 }
 
+func (b *box) selectNext() {
+	n := len(b.completions)
+	if n > 0 {
+		b.selected++
+		if b.selected >= n {
+			b.selected = 0
+		}
+	}
+}
+
+func (b *box) selectPrev() {
+	n := len(b.completions)
+	if n > 0 {
+		b.selected--
+		if b.selected < 0 {
+			b.selected = n - 1
+		}
+	}
+}
+
+func (p *prompt) insertSelected() {
+	if p.popup.selected >= 0 {
+		c := p.popup.completions[p.popup.selected]
+		runes := []rune(c.text[c.startPos:])
+		p.text = append(p.text[:p.popup.iStart], append(runes, p.text[p.pos:]...)...)
+		p.pos = p.popup.iStart + len(runes)
+	}
+}
+
+func (p *prompt) setText(s string) {
+	p.text = []rune(s)
+	p.pos = len(p.text)
+}
+
 func (p *prompt) draw(x, y, w, h int, fg, bg termbox.Attribute) {
 	for _, c := range p.prefix {
 		termbox.SetCell(x, y, c, p.fg, p.bg)
@@ -95,7 +144,7 @@ func (p *prompt) draw(x, y, w, h int, fg, bg termbox.Attribute) {
 		termbox.SetCell(x+i, y, r, fg, bg)
 	}
 	termbox.SetCursor(x+p.pos, y)
-	p.popup.draw(x+p.pos, y, w, h)
+	p.popup.draw(x+p.popup.iStart, y, w, h)
 }
 
 func (p *prompt) insertRune(r rune) {
@@ -103,11 +152,12 @@ func (p *prompt) insertRune(r rune) {
 	copy(p.text[p.pos+1:], p.text[p.pos:])
 	p.text[p.pos] = r
 	p.pos++
-	p.getCompletions()
 }
 
 func (p *prompt) getCompletions() {
 	if outPrompt.completer != nil {
+		p.popup.selected = -1
+		p.popup.iStart = p.pos
 		p.popup.completions = outPrompt.completer(p)
 		sort.Slice(p.popup.completions, func(i, j int) bool {
 			return strings.Compare(p.popup.completions[i].display, p.popup.completions[j].display) < 0
@@ -172,23 +222,44 @@ func (p *prompt) parse(ev termbox.Event) {
 	switch ev.Key {
 	case termbox.KeyBackspace, termbox.KeyBackspace2:
 		p.deleteRuneBeforeCursor()
+		p.getCompletions()
 	case termbox.KeyDelete:
 		p.deleteRuneAtCursor()
+		p.clearCompletions()
 	case termbox.KeyEsc:
 		p.deleteAllRunes()
+		p.clearCompletions()
 	case termbox.KeyArrowLeft:
 		p.moveCursorBackward()
+		p.clearCompletions()
 	case termbox.KeyArrowRight:
 		p.moveCursorForward()
+		p.clearCompletions()
 	case termbox.KeyHome:
 		p.moveCursorToBegin()
+		p.clearCompletions()
 	case termbox.KeyEnd:
 		p.moveCursorToEnd()
+		p.clearCompletions()
 	case termbox.KeySpace:
 		p.insertRune(' ')
+		p.getCompletions()
+	case termbox.KeyTab:
+		if !p.hasCompletions() {
+			p.getCompletions()
+		}
+		p.popup.selectNext()
+		p.insertSelected()
+	case termbox.KeyArrowDown:
+		p.popup.selectNext()
+		p.insertSelected()
+	case termbox.KeyArrowUp:
+		p.popup.selectPrev()
+		p.insertSelected()
 	default:
 		if ev.Ch != 0 {
 			p.insertRune(ev.Ch)
+			p.getCompletions()
 		}
 	}
 }

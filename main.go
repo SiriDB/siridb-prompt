@@ -29,6 +29,7 @@ var (
 	xDbname   = xApp.Flag("dbname", "Database name.").Short('d').String()
 	xHistory  = xApp.Flag("history", "Number of command in history. A value of 0 disables history.").Default("1000").Uint16()
 	xTimeout  = xApp.Flag("timeout", "Query timeout in seconds.").Default("60").Uint16()
+	xJSON     = xApp.Flag("json", "Raw JSON output.").Bool()
 	xServers  = xApp.Flag("servers", "Server(s) to connect to. Multiple servers are allowed and should be separated with a comma. (syntax: --servers=host[:port]").Short('s').String()
 	xVersion  = xApp.Flag("version", "Print version information and exit.").Short('v').Bool()
 )
@@ -167,18 +168,53 @@ func getCompletions(p *prompt) []*completion {
 	for _, elem := range res.GetExpecting() {
 		if kw, ok := elem.(*goleri.Keyword); ok {
 			word := kw.GetKeyword()
-			if len(rest) == 0 && len(q) > 0 && q[len(q)-1] == ' ' || len(rest) > 0 && strings.HasPrefix(word, rest) {
+			if len(p.text) == 0 || len(rest) == 0 && len(q) > 0 && q[len(q)-1] == ' ' || len(rest) > 0 && strings.HasPrefix(word, rest) {
 				compl := completion{
 					text:     fmt.Sprintf("%s ", word),
 					display:  word,
-					startPos: -len(rest),
+					startPos: len(rest),
 				}
 				completions = append(completions, &compl)
 			}
 		}
 	}
-
 	return completions
+}
+
+var timePrecision *string
+
+func initConnect() {
+	var tp string
+
+	for !client.IsConnected() {
+		time.Sleep(time.Second)
+	}
+	res, err := client.Query("show time_precision", 10)
+	if err != nil {
+		logger.append(fmt.Sprintf("error reading time_precision: %s", err.Error()))
+		return
+	}
+	v, ok := res.(map[string]interface{})
+	if !ok {
+		logger.append("error reading time_precision: missing 'map' in data")
+		return
+	}
+
+	arr, ok := v["data"].([]interface{})
+	if !ok || len(arr) != 1 {
+		logger.append("error reading time_precision: missing array 'data' or length 1 in map")
+		return
+	}
+
+	tp, ok = arr[0].(map[string]interface{})["value"].(string)
+
+	if !ok {
+		logger.append("error reading time_precision: cannot find time_precision in data")
+		return
+	}
+
+	logger.append(fmt.Sprintf("finished reading time precision: '%s'", tp))
+	timePrecision = &tp
 }
 
 func main() {
@@ -195,6 +231,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	if *xJSON {
+		outv.setModeJSON()
+	}
+
 	err = termbox.Init()
 	if err != nil {
 		panic(err)
@@ -207,7 +247,7 @@ func main() {
 	go logHandle(logCh)
 
 	var servers []server
-	servers, err = getServers("localhost:9000")
+	servers, err = getServers("localhost:9000,localhost:9001")
 	if err != nil {
 		logger.append(fmt.Sprintf("error reading servers: %s", err))
 	}
@@ -242,6 +282,7 @@ func main() {
 	)
 
 	client.Connect()
+	go initConnect()
 	if client.IsAvailable() {
 		currentView = cViewOutput
 	}
@@ -261,6 +302,14 @@ mainloop:
 					break mainloop
 				case termbox.KeyCtrlL, termbox.KeyEsc:
 					currentView = cViewOutput
+				case termbox.KeyArrowUp:
+					logger.up()
+				case termbox.KeyArrowDown:
+					logger.down()
+				case termbox.KeyPgdn:
+					logger.pageDown()
+				case termbox.KeyPgup:
+					logger.pageUp()
 				}
 			} else if currentView == cViewOutput {
 				switch ev.Key {
@@ -268,13 +317,30 @@ mainloop:
 					break mainloop
 				case termbox.KeyCtrlL:
 					currentView = cViewLog
-				case termbox.KeyTab:
-					// auto completion
 				case termbox.KeyCtrlJ:
 					toClipboard()
 				case termbox.KeyEnter:
+					outPrompt.clearCompletions()
 					if sendCommand() == 1 {
 						break mainloop
+					}
+				case termbox.KeyPgdn:
+					outv.pageDown()
+				case termbox.KeyPgup:
+					outv.pageUp()
+				case termbox.KeyArrowUp:
+					if outPrompt.hasCompletions() {
+						outPrompt.parse(ev)
+					} else {
+						outPrompt.setText(his.prev())
+						outPrompt.clearCompletions()
+					}
+				case termbox.KeyArrowDown:
+					if outPrompt.hasCompletions() {
+						outPrompt.parse(ev)
+					} else {
+						outPrompt.setText(his.next())
+						outPrompt.clearCompletions()
 					}
 				default:
 					outPrompt.parse(ev)

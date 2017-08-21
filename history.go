@@ -58,12 +58,34 @@ func (h *history) save() {
 }
 
 func (h *history) insert(s string) {
-	if len(s) > 0 && (len(h.entries) == 0 || strings.Compare(s, h.entries[len(h.entries)-1]) != 0) {
+	if len(s) > 0 && (len(h.entries) == 0 || strings.Compare(s, h.entries[0]) != 0) {
 		h.entries = append([]string{s}, h.entries...)
-		h.pos = len(h.entries)
 	}
+
+	h.pos = -1
 
 	if len(his.entries) > his.size {
 		his.entries = his.entries[:his.size]
 	}
+}
+
+func (h *history) prev() string {
+	n := len(h.entries)
+	if n == 0 {
+		return ""
+	}
+	if h.pos < n-1 {
+		h.pos++
+	}
+	return h.entries[h.pos]
+}
+
+func (h *history) next() string {
+	if h.pos >= 0 {
+		h.pos--
+	}
+	if h.pos == -1 {
+		return ""
+	}
+	return h.entries[h.pos]
 }

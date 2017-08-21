@@ -36,10 +36,14 @@ func newView() *view {
 	v := view{
 		lines: make([]string, 0),
 		query: nil,
-		mode:  cModeJSON,
+		mode:  cModePretty,
 		pos:   -1,
 	}
 	return &v
+}
+
+func (v *view) setModeJSON() {
+	v.mode = cModeJSON
 }
 
 func (v *view) addString(s string, w int) {
@@ -65,10 +69,25 @@ func (v *view) addTable(columns []string, rows []interface{}, limit, mustSort bo
 		nr = min(nr, 100)
 	}
 	colSizes := make([]int, nc)
+	colFormatters := make([]func(i interface{}) string, nc)
 	fmtCols := make([]string, nc)
 	fmtRows := make([][]string, nr)
 	for i, s := range columns {
 		colSizes[i] = len(s)
+		switch s {
+		case "start", "end", "timestamp":
+			colFormatters[i] = fmtTimestamp
+		case "size", "buffer_size":
+			colFormatters[i] = fmtSizeBytes
+		case "received_points", "selected_points":
+			colFormatters[i] = fmtLargeNum
+		case "mem_usage":
+			colFormatters[i] = fmtSizeMb
+		case "uptime":
+			colFormatters[i] = fmtDuration
+		default:
+			colFormatters[i] = func(i interface{}) string { return fmt.Sprint(i) }
+		}
 	}
 	for r, rowIf := range rows {
 		if row, ok := rowIf.([]interface{}); ok {
@@ -77,7 +96,7 @@ func (v *view) addTable(columns []string, rows []interface{}, limit, mustSort bo
 			}
 			fmtRows[r] = make([]string, nc)
 			for c, col := range row {
-				s := fmt.Sprint(col)
+				s := colFormatters[c](col)
 				if len(s) > colSizes[c] {
 					colSizes[c] = len(s)
 				}
@@ -148,74 +167,20 @@ func (v *view) tryList(m map[string]interface{}, w int) (bool, error) {
 		}
 	}
 
-	delete(m, "columns")
-
 	for k, data := range m {
-		// if reflect.TypeOf(data).Kind() != reflect.Slice {
-		// 	return true, fmt.Errorf("%s not a slice", k)
-		// }
-		// rows := reflect.ValueOf(data)
-		var rows []interface{}
-		var ok bool
-		if rows, ok = data.([]interface{}); !ok {
-			return true, fmt.Errorf("%s not a slice", k)
+		switch k {
+		case "__timeit__", "columns":
+			// skip
+		default:
+			var rows []interface{}
+			var ok bool
+			if rows, ok = data.([]interface{}); !ok {
+				return true, fmt.Errorf("%s not a slice", k)
+			}
+			v.addTable(columns, rows, false, true, w)
 		}
-
-		v.addTable(columns, rows, false, true, w)
-		break
 	}
 
-	// fmt.Print(columns)
-
-	// if reflect.TypeOf(columns).Kind() != reflect.Slice {
-	// 	return false, fmt.Errorf("columns not a slice")
-	// }
-
-	// slice := reflect.ValueOf(columns)
-	// n := slice.Len()
-	// if n == 0 {
-	// 	return false, fmt.Errorf("zero comuns found")
-	// }
-
-	// var temp = make([]string, n)
-	// for i := 0; i < n; i++ {
-	// 	v := slice.Index(i).Interface()
-	// 	if s, ok := v.(string); ok {
-	// 		temp[i] = s
-	// 	} else {
-	// 		return false, fmt.Errorf("columns contains non string")
-	// 	}
-	// }
-
-	// *lines = append(*lines, strings.Join(temp, ","))
-
-	// delete(m, "columns")
-
-	// for k, data := range m {
-	// 	if reflect.TypeOf(data).Kind() != reflect.Slice {
-	// 		return true, fmt.Errorf("%s not a slice", k)
-	// 	}
-	// 	rows := reflect.ValueOf(data)
-	// 	nrows := rows.Len()
-	// 	for r := 0; r < nrows; r++ {
-	// 		row := rows.Index(r).Interface()
-
-	// 		if reflect.TypeOf(row).Kind() != reflect.Slice {
-	// 			return true, fmt.Errorf("row not a slice")
-	// 		}
-	// 		cols := reflect.ValueOf(row)
-
-	// 		ncols := cols.Len()
-	// 		if n != ncols {
-	// 			return true, fmt.Errorf("number of columns does not equel values")
-	// 		}
-	// 		var temp = make([]string, n)
-	// 		for i := 0; i < ncols; i++ {
-	// 			temp[i] = escapeCsv(fmt.Sprint(cols.Index(i).Interface()))
-	// 		}
-	// 		*lines = append(*lines, strings.Join(temp, ","))
-	// 	}
-	// }
 	return true, nil
 }
 
@@ -236,12 +201,13 @@ func (v *view) append(q *query, w int) {
 			return
 		}
 		v.addString(s, w)
+	} else if v.mode == cModePretty {
+		err := v.addPretty(w)
+		if err != nil {
+			v.error(err, w)
+		}
 	}
 	v.newLine()
-	err := v.addPretty(w)
-	if err != nil {
-		v.error(err, w)
-	}
 	v.pos = -1
 }
 
@@ -288,6 +254,36 @@ func (v *view) down() {
 	if v.pos != -1 {
 		v.pos++
 	}
+	if v.pos >= len(v.lines) {
+		v.pos = -1
+	}
+}
+
+func (v *view) pageUp() {
+	if v.pos == 0 {
+		return
+	}
+	_, h := termbox.Size()
+
+	if v.pos == -1 {
+		v.pos = len(v.lines)
+	}
+
+	v.pos -= (h - 3)
+
+	if v.pos < 0 {
+		v.pos = 0
+	}
+}
+
+func (v *view) pageDown() {
+	if v.pos == -1 {
+		return
+	}
+	_, h := termbox.Size()
+
+	v.pos += (h - 3)
+
 	if v.pos >= len(v.lines) {
 		v.pos = -1
 	}

@@ -78,3 +78,33 @@ func (l *logView) down() {
 		l.pos = -1
 	}
 }
+
+func (l *logView) pageUp() {
+	if l.pos == 0 {
+		return
+	}
+	_, h := termbox.Size()
+
+	if l.pos == -1 {
+		l.pos = len(l.entries)
+	}
+
+	l.pos -= (h - 2)
+
+	if l.pos < 0 {
+		l.pos = 0
+	}
+}
+
+func (l *logView) pageDown() {
+	if l.pos == -1 {
+		return
+	}
+	_, h := termbox.Size()
+
+	l.pos += (h - 2)
+
+	if l.pos >= len(l.entries) {
+		l.pos = -1
+	}
+}
