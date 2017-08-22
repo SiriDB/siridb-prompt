@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
@@ -170,6 +171,32 @@ func getCompletions(p *prompt) []*completion {
 			startPos: len(trimmed),
 		}
 		completions = append(completions, &compl)
+	}
+
+	if strings.HasPrefix("import ", trimmed) {
+		if len(trimmed) >= 6 {
+			p := strings.TrimSpace(trimmed[6:])
+			if len(p) == 0 {
+				p = "."
+			}
+			if files, err := ioutil.ReadDir(p); err == nil {
+				for _, f := range files {
+					compl := completion{
+						text:     fmt.Sprintf("%s ", f.Name()),
+						display:  f.Name(),
+						startPos: len(rest),
+					}
+					completions = append(completions, &compl)
+				}
+			}
+		} else {
+			compl := completion{
+				text:     "import ",
+				display:  "import",
+				startPos: len(trimmed),
+			}
+			completions = append(completions, &compl)
+		}
 	}
 
 	for _, elem := range res.GetExpecting() {
