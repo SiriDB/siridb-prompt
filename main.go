@@ -24,13 +24,13 @@ const AppVersion = "2.1.0"
 
 var (
 	xApp      = kingpin.New("siridb-admin", "Tool for communicating with a SiriDB database.")
-	xUser     = xApp.Flag("user", "Database user.").Short('u').String()
+	xDbname   = xApp.Flag("dbname", "Database name.").Short('d').Required().String()
+	xServers  = xApp.Flag("servers", "Server(s) to connect to. Multiple servers are allowed and should be separated with a comma. (syntax: --servers=host[:port]").Short('s').Required().String()
+	xUser     = xApp.Flag("user", "Database user.").Short('u').Required().String()
 	xPassword = xApp.Flag("password", "Password for the database user.").Short('p').String()
-	xDbname   = xApp.Flag("dbname", "Database name.").Short('d').String()
 	xHistory  = xApp.Flag("history", "Number of command in history. A value of 0 disables history.").Default("1000").Uint16()
 	xTimeout  = xApp.Flag("timeout", "Query timeout in seconds.").Default("60").Uint16()
 	xJSON     = xApp.Flag("json", "Raw JSON output.").Bool()
-	xServers  = xApp.Flag("servers", "Server(s) to connect to. Multiple servers are allowed and should be separated with a comma. (syntax: --servers=host[:port]").Short('s').String()
 	xVersion  = xApp.Flag("version", "Print version information and exit.").Short('v').Bool()
 )
 
@@ -61,8 +61,14 @@ func logHandle(logCh chan string) {
 	}
 }
 
+func drawPassPrompt(p *prompt) {
+	termbox.Clear(coldef, coldef)
+	w, h := termbox.Size()
+	p.draw(0, 0, w, h, coldef, coldef)
+	termbox.Flush()
+}
+
 func draw() {
-	termbox.SetOutputMode(termbox.Output256)
 	termbox.Clear(coldef, coldef)
 	w, h := termbox.Size()
 	x := 0
@@ -156,11 +162,12 @@ func getCompletions(p *prompt) []*completion {
 
 	var completions []*completion
 	rest := q[res.Pos():]
-	if strings.HasPrefix("exit", q) {
+	trimmed := strings.TrimSpace(q)
+	if len(trimmed) < 4 && strings.HasPrefix("exit", trimmed) {
 		compl := completion{
 			text:     "exit",
 			display:  "exit",
-			startPos: -len(q),
+			startPos: len(trimmed),
 		}
 		completions = append(completions, &compl)
 	}
@@ -241,25 +248,42 @@ func main() {
 	}
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
+	termbox.SetOutputMode(termbox.Output256)
 
 	logCh := make(chan string)
 
 	go logHandle(logCh)
 
 	var servers []server
-	servers, err = getServers("localhost:9000,localhost:9001")
+	servers, err = getServers(*xServers)
 	if err != nil {
 		logger.append(fmt.Sprintf("error reading servers: %s", err))
 	}
 
-	if len(*xUser) == 0 {
-		*xUser = "iris"
-	}
 	if len(*xPassword) == 0 {
-		*xPassword = "siri"
-	}
-	if len(*xDbname) == 0 {
-		*xDbname = "dbtest"
+		pp := newPrompt("Password: ", coldef|termbox.AttrBold, coldef)
+		pp.hideText = true
+
+	passloop:
+		for {
+			drawPassPrompt(pp)
+			switch ev := termbox.PollEvent(); ev.Type {
+			case termbox.EventKey:
+				switch ev.Key {
+				case termbox.KeyCtrlC, termbox.KeyCtrlQ:
+					termbox.Close()
+					os.Exit(1)
+				case termbox.KeyEnter:
+					*xPassword = string(pp.text)
+					break passloop
+				default:
+					pp.parse(ev)
+				}
+			case termbox.EventError:
+				panic(ev.Err)
+			}
+
+		}
 	}
 
 	var historyFnP *string

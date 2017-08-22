@@ -10,6 +10,7 @@ import (
 
 const cModePretty = 0
 const cModeJSON = 1
+const cLimitRows = 200
 
 type view struct {
 	lines []string
@@ -47,6 +48,11 @@ func (v *view) setModeJSON() {
 }
 
 func (v *view) addString(s string, w int) {
+	if len(s) == 0 {
+		v.newLine()
+		return
+	}
+
 	r := []rune(s)
 
 	for i := 0; i < len(r); i += w {
@@ -62,11 +68,11 @@ func (v *view) newLine() {
 func (v *view) addTable(columns []string, rows []interface{}, limit, mustSort bool, w int) error {
 	nc := len(columns)
 	if nc == 0 {
-		return fmt.Errorf("cannot make table: : at least one column is required")
+		return fmt.Errorf("cannot make table: at least one column is required")
 	}
 	nr := len(rows)
 	if limit {
-		nr = min(nr, 100)
+		nr = min(nr, cLimitRows)
 	}
 	colSizes := make([]int, nc)
 	colFormatters := make([]func(i interface{}) string, nc)
@@ -74,22 +80,12 @@ func (v *view) addTable(columns []string, rows []interface{}, limit, mustSort bo
 	fmtRows := make([][]string, nr)
 	for i, s := range columns {
 		colSizes[i] = len(s)
-		switch s {
-		case "start", "end", "timestamp":
-			colFormatters[i] = fmtTimestamp
-		case "size", "buffer_size":
-			colFormatters[i] = fmtSizeBytes
-		case "received_points", "selected_points":
-			colFormatters[i] = fmtLargeNum
-		case "mem_usage":
-			colFormatters[i] = fmtSizeMb
-		case "uptime":
-			colFormatters[i] = fmtDuration
-		default:
-			colFormatters[i] = func(i interface{}) string { return fmt.Sprint(i) }
-		}
+		colFormatters[i] = getFormatter(s)
 	}
 	for r, rowIf := range rows {
+		if r >= nr {
+			break
+		}
 		if row, ok := rowIf.([]interface{}); ok {
 			if nc != len(row) {
 				return fmt.Errorf("cannot make table: invalid row length found")
@@ -102,9 +98,6 @@ func (v *view) addTable(columns []string, rows []interface{}, limit, mustSort bo
 				}
 				fmtRows[r][c] = s
 			}
-		}
-		if r > nr {
-			break
 		}
 	}
 	if mustSort {
@@ -126,6 +119,9 @@ func (v *view) addTable(columns []string, rows []interface{}, limit, mustSort bo
 		}
 		v.addString(strings.Join(fmtCols, " \u2502 "), w)
 	}
+	if len(rows) > nr {
+		v.addString("...", w)
+	}
 	return nil
 }
 
@@ -135,38 +131,198 @@ func (v *view) addPretty(w int) error {
 		return fmt.Errorf("got an unexpected map")
 	}
 
-	if stop, err := v.tryList(m, w); stop {
+	if err := v.tryShow(m, w); err != nil {
 		return err
+	}
+
+	if err := v.tryCalc(m, w); err != nil {
+		return err
+	}
+
+	if err := v.tryMotd(m, w); err != nil {
+		return err
+	}
+
+	if err := v.trySuccess(m, w); err != nil {
+		return err
+	}
+
+	if err := v.tryError(m, w); err != nil {
+		return err
+	}
+
+	if err := v.tryHelp(m, w); err != nil {
+		return err
+	}
+
+	if err := v.tryCount(m, w); err != nil {
+		return err
+	}
+
+	if columns := getListColumns(m); columns != nil {
+		if err := v.tryList(m, w, columns); err != nil {
+			return err
+		}
+	} else {
+		if err := v.trySelect(m, w); err != nil {
+			return err
+		}
+	}
+
+	if err := v.tryTimeit(m, w); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (v *view) tryTimeit(m map[string]interface{}, w int) error {
+	var err error
+	if data, ok := m["__timeit__"]; ok {
+		var columns = []string{"server", "time"}
+		var rows []interface{}
+		if items, ok := data.([]interface{}); ok {
+			for _, item := range items {
+				if itm, ok := item.(map[string]interface{}); ok {
+					if server, ok := itm["server"]; ok {
+						if t, ok := itm["time"]; ok {
+							rows = append(rows, []interface{}{server, t})
+						}
+					}
+				} else {
+					break
+				}
+			}
+		}
+		if len(rows) > 0 {
+			v.newLine()
+			err = v.addTable(columns, rows, false, true, w)
+		}
+	}
+	return err
+}
+
+func (v *view) tryShow(m map[string]interface{}, w int) error {
+	var err error
+	if data, ok := m["data"]; ok {
+		var columns = []string{"name", "value"}
+		var rows []interface{}
+		if items, ok := data.([]interface{}); ok {
+			for _, item := range items {
+				if itm, ok := item.(map[string]interface{}); ok {
+					if name, ok := itm["name"]; ok {
+						if value, ok := itm["value"]; ok {
+							n := fmt.Sprint(name)
+							v := getFormatter(n)(value)
+							rows = append(rows, []interface{}{n, v})
+						}
+					} else {
+						break
+					}
+				} else {
+					break
+				}
+			}
+		}
+		if len(rows) > 0 {
+			err = v.addTable(columns, rows, false, true, w)
+		}
+	}
+	return err
+}
+
+func (v *view) tryCalc(m map[string]interface{}, w int) error {
+	if data, ok := m["calc"]; ok {
+		n, ok := data.(int)
+		if ok {
+			v.addString(fmt.Sprint(n), w)
+			v.addString(fmtTimestampUTC(n), w)
+			v.addString(fmt.Sprintf("Local time: %s", fmtTimestamp(n)), w)
+		}
 	}
 	return nil
 }
 
-func (v *view) tryList(m map[string]interface{}, w int) (bool, error) {
-	var colIf interface{}
-	var colArr []interface{}
-	var columns []string
-
-	var ok bool
-	if colIf, ok = m["columns"]; !ok {
-		return false, fmt.Errorf("columns not found")
-	}
-	if colArr, ok = colIf.([]interface{}); !ok {
-		return false, fmt.Errorf("columns not a slice")
-	}
-	if len(colArr) == 0 {
-		return false, fmt.Errorf("zero columns found")
-	}
-
-	columns = make([]string, len(colArr))
-
-	for i, col := range colArr {
-		if s, ok := col.(string); ok {
-			columns[i] = s
-		} else {
-			return false, fmt.Errorf("columns contains non string")
+func (v *view) tryMotd(m map[string]interface{}, w int) error {
+	if data, ok := m["motd"]; ok {
+		s, ok := data.(string)
+		if ok {
+			for _, line := range strings.Split(s, "\n") {
+				v.addString(line, w)
+			}
 		}
 	}
+	return nil
+}
 
+func (v *view) trySuccess(m map[string]interface{}, w int) error {
+	if data, ok := m["success_msg"]; ok {
+		s, ok := data.(string)
+		if ok {
+			v.addString(s, w)
+		}
+	}
+	return nil
+}
+
+func (v *view) tryError(m map[string]interface{}, w int) error {
+	if data, ok := m["error_msg"]; ok {
+		s, ok := data.(string)
+		if ok {
+			v.addString(s, w)
+		}
+	}
+	return nil
+}
+
+func (v *view) tryHelp(m map[string]interface{}, w int) error {
+	if data, ok := m["help"]; ok {
+		s, ok := data.(string)
+		if ok {
+			for _, line := range strings.Split(s, "\n") {
+				v.addString(line, w)
+			}
+		}
+	}
+	return nil
+}
+
+func (v *view) tryCount(m map[string]interface{}, w int) error {
+	for k, data := range m {
+		switch k {
+		case "calc":
+			// skip
+		default:
+			n, ok := data.(int)
+			if ok {
+				v.addString(fmtLargeNum(n), w)
+			}
+		}
+	}
+	return nil
+}
+
+func getListColumns(m map[string]interface{}) []string {
+	if colIf, ok := m["columns"]; ok {
+		var columns []string
+
+		if colArr, ok := colIf.([]interface{}); ok {
+			for _, col := range colArr {
+				if s, ok := col.(string); ok {
+					columns = append(columns, s)
+				}
+			}
+		}
+
+		if len(columns) > 0 {
+			return columns
+		}
+	}
+	return nil
+}
+
+func (v *view) tryList(m map[string]interface{}, w int, columns []string) error {
+	var err error
 	for k, data := range m {
 		switch k {
 		case "__timeit__", "columns":
@@ -174,14 +330,41 @@ func (v *view) tryList(m map[string]interface{}, w int) (bool, error) {
 		default:
 			var rows []interface{}
 			var ok bool
-			if rows, ok = data.([]interface{}); !ok {
-				return true, fmt.Errorf("%s not a slice", k)
+			if rows, ok = data.([]interface{}); ok {
+				err = v.addTable(columns, rows, false, true, w)
 			}
-			v.addTable(columns, rows, false, true, w)
 		}
 	}
+	return err
+}
 
-	return true, nil
+func (v *view) trySelect(m map[string]interface{}, w int) error {
+	var columns = []string{"timestamp", "value"}
+	n := 0
+	for series, data := range m {
+		if points, ok := data.([]interface{}); ok {
+			if len(points) > 0 {
+				if point, test := points[0].([]interface{}); !test || len(point) != 2 {
+					ok = false
+				}
+			}
+			if ok {
+				if n > cLimitRows {
+					v.newLine()
+					v.addString("...more series are found but hidden from output", w)
+					break
+				}
+				n++
+				v.newLine()
+				v.addString(fmt.Sprintf("# %s", series), w)
+				if err := v.addTable(columns, points, true, false, w); err != nil {
+					return err
+				}
+
+			}
+		}
+	}
+	return nil
 }
 
 func (v *view) error(err error, w int) {

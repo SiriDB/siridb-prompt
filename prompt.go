@@ -8,6 +8,11 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+const cPopupFg = 234
+const cPopupBg = 252
+const cPopupSelectFg = 255
+const cPopupSelectBg = 246
+
 type completion struct {
 	text     string
 	display  string
@@ -24,6 +29,8 @@ type prompt struct {
 	prefix    string
 	text      []rune
 	pos       int
+	offset    int
+	hideText  bool
 	fg        termbox.Attribute
 	bg        termbox.Attribute
 	completer func(p *prompt) []*completion
@@ -35,8 +42,10 @@ func newPrompt(prefix string, fg, bg termbox.Attribute) *prompt {
 		prefix:    prefix,
 		text:      make([]rune, 0),
 		pos:       0,
+		offset:    0,
 		fg:        fg,
 		bg:        bg,
+		hideText:  false,
 		completer: nil,
 		popup: box{
 			completions: nil,
@@ -45,11 +54,6 @@ func newPrompt(prefix string, fg, bg termbox.Attribute) *prompt {
 	}
 	return &p
 }
-
-const cPopupFg = 234
-const cPopupBg = 252
-const cPopupSelectFg = 255
-const cPopupSelectBg = 246
 
 func (b *box) draw(x, y, w, h int) {
 	var fg, bg termbox.Attribute
@@ -138,12 +142,22 @@ func (p *prompt) draw(x, y, w, h int, fg, bg termbox.Attribute) {
 		termbox.SetCell(x, y, c, p.fg, p.bg)
 		x++
 	}
-	/* x is now updated including the prefix */
 
-	for i, r := range p.text {
+	n := len(p.text)
+	if p.offset+p.pos+x > w {
+		p.offset = min(x+n-w+1, p.pos)
+	} else if p.offset > p.pos {
+		p.offset = p.pos
+	}
+	n = min(p.offset+(w-x), n)
+
+	for i, r := range p.text[p.offset:n] {
+		if p.hideText {
+			r = '*'
+		}
 		termbox.SetCell(x+i, y, r, fg, bg)
 	}
-	termbox.SetCursor(x+p.pos, y)
+	termbox.SetCursor(x+p.pos-p.offset, y)
 	p.popup.draw(x+p.popup.iStart, y, w, h)
 }
 

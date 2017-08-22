@@ -6,6 +6,63 @@ import (
 	"time"
 )
 
+func getFormatter(s string) func(i interface{}) string {
+	switch s {
+	case "start", "end", "timestamp":
+		return fmtTimestamp
+	case "size", "buffer_size":
+		return fmtSizeBytes
+	case "received_points", "selected_points", "list_limit", "select_points_limit":
+		return fmtLargeNum
+	case "mem_usage":
+		return fmtSizeMb
+	case "uptime":
+		return fmtDuration
+	case "drop_threshold":
+		return fmtPercentage
+	case "time_precision":
+		return fmtTimePrecision
+	case "time":
+		return fmtTimeit
+	default:
+		return func(i interface{}) string { return fmt.Sprint(i) }
+	}
+}
+
+func fmtTimeit(i interface{}) string {
+	f, ok := i.(float64)
+	if ok {
+		return fmt.Sprintf("%.6f seconds", f)
+
+	}
+	return fmt.Sprint(i)
+}
+
+func fmtTimePrecision(i interface{}) string {
+	tp, ok := i.(string)
+	if ok {
+		switch tp {
+		case "s":
+			return fmt.Sprintf("%s (%s)", tp, "second")
+		case "ms":
+			return fmt.Sprintf("%s (%s)", tp, "millisecond")
+		case "us":
+			return fmt.Sprintf("%s (%s)", tp, "microsecond")
+		case "ns":
+			return fmt.Sprintf("%s (%s)", tp, "namesecond")
+		}
+	}
+	return fmt.Sprint(i)
+}
+
+func fmtPercentage(i interface{}) string {
+	p, ok := i.(float64)
+	if ok {
+		return fmt.Sprintf("%v (%d%%)", i, int(p*100))
+	}
+	return fmt.Sprint(i)
+}
+
 func fmtSizeBytes(i interface{}) string {
 	size, ok := i.(int)
 	if ok {
@@ -41,7 +98,7 @@ func fmtTimestamp(i interface{}) string {
 			s := int64(ts / 1000)
 			ns := int64(ts % 1000 * 1000000)
 			return time.Unix(s, ns).Format(time.UnixDate)
-		case "mi":
+		case "us":
 			s := int64(ts / 1000000)
 			ns := int64(ts % 1000000 * 1000)
 			return time.Unix(s, ns).Format(time.UnixDate)
@@ -49,6 +106,29 @@ func fmtTimestamp(i interface{}) string {
 			s := int64(ts / 1000000000)
 			ns := int64(ts % 1000000000)
 			return time.Unix(s, ns).Format(time.UnixDate)
+		}
+	}
+	return fmt.Sprint(i)
+}
+
+func fmtTimestampUTC(i interface{}) string {
+	ts, ok := i.(int)
+	if ok && timePrecision != nil {
+		switch *timePrecision {
+		case "s":
+			return time.Unix(int64(ts), 0).UTC().Format(time.RFC1123)
+		case "ms":
+			s := int64(ts / 1000)
+			ns := int64(ts % 1000 * 1000000)
+			return time.Unix(s, ns).UTC().Format(time.RFC1123)
+		case "us":
+			s := int64(ts / 1000000)
+			ns := int64(ts % 1000000 * 1000)
+			return time.Unix(s, ns).UTC().Format(time.RFC1123)
+		case "ns":
+			s := int64(ts / 1000000000)
+			ns := int64(ts % 1000000000)
+			return time.Unix(s, ns).UTC().Format(time.RFC1123)
 		}
 	}
 	return fmt.Sprint(i)
