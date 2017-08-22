@@ -8,10 +8,10 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-const cPopupFg = 234
-const cPopupBg = 252
-const cPopupSelectFg = 255
-const cPopupSelectBg = 246
+const cPopupFg = termbox.ColorBlack
+const cPopupBg = termbox.ColorWhite
+const cPopupSelectFg = termbox.ColorWhite
+const cPopupSelectBg = termbox.ColorMagenta
 
 type completion struct {
 	text     string

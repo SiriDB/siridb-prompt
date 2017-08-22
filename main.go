@@ -53,6 +53,7 @@ var currentView = cViewLog
 var outPrompt = newPrompt(">>> ", coldef|termbox.AttrBold, coldef)
 var his *history
 var siriGrammar = SiriGrammar()
+var timePrecision *string
 
 func logHandle(logCh chan string) {
 	for {
@@ -163,7 +164,7 @@ func getCompletions(p *prompt) []*completion {
 
 	var completions []*completion
 	rest := q[res.Pos():]
-	trimmed := strings.TrimSpace(q)
+	trimmed := strings.TrimLeft(q, " ")
 	if len(trimmed) < 4 && strings.HasPrefix("exit", trimmed) {
 		compl := completion{
 			text:     "exit",
@@ -173,29 +174,58 @@ func getCompletions(p *prompt) []*completion {
 		completions = append(completions, &compl)
 	}
 
-	if strings.HasPrefix("import ", trimmed) {
-		if len(trimmed) >= 6 {
-			p := strings.TrimSpace(trimmed[6:])
-			if len(p) == 0 {
-				p = "."
-			}
-			if files, err := ioutil.ReadDir(p); err == nil {
-				for _, f := range files {
-					compl := completion{
-						text:     fmt.Sprintf("%s ", f.Name()),
-						display:  f.Name(),
-						startPos: len(rest),
-					}
-					completions = append(completions, &compl)
+	if len(trimmed) < 6 && strings.HasPrefix("import", trimmed) {
+		compl := completion{
+			text:     "import ",
+			display:  "import",
+			startPos: len(trimmed),
+		}
+		completions = append(completions, &compl)
+	}
+
+	if strings.HasPrefix(trimmed, "import ") {
+		var fn string
+		p := strings.TrimLeft(trimmed[6:], " ")
+		p, fn = path.Split(p)
+
+		if len(p) == 0 {
+			p = "."
+		}
+
+		if files, err := ioutil.ReadDir(p); err == nil {
+			s := strings.TrimSpace(path.Join("..", " "))
+			if strings.HasPrefix(s, fn) {
+				compl := completion{
+					text:     s,
+					display:  s,
+					startPos: len(fn),
 				}
+				completions = append(completions, &compl)
 			}
-		} else {
-			compl := completion{
-				text:     "import ",
-				display:  "import",
-				startPos: len(trimmed),
+			for _, f := range files {
+				var s, d string
+				if f.IsDir() {
+					d = strings.TrimSpace(path.Join(f.Name(), " "))
+					s = d[:len(d)-1]
+				} else {
+					d = f.Name()
+					locase := strings.ToLower(d)
+					if !strings.HasSuffix(locase, ".json") && !strings.HasSuffix(locase, ".csv") {
+						continue
+					}
+					s = d
+				}
+				if !strings.HasPrefix(s, fn) {
+					continue
+				}
+
+				compl := completion{
+					text:     s,
+					display:  d,
+					startPos: len(fn),
+				}
+				completions = append(completions, &compl)
 			}
-			completions = append(completions, &compl)
 		}
 	}
 
@@ -214,8 +244,6 @@ func getCompletions(p *prompt) []*completion {
 	}
 	return completions
 }
-
-var timePrecision *string
 
 func initConnect() {
 	var tp string
