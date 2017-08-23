@@ -81,7 +81,7 @@ func draw() {
 	if currentView == cViewLog {
 		s = " Log (ESC / CTRL+L close log, CTRL+Q quit)"
 	} else {
-		s = " Output (CTRL+L view log, CTRL+J copy to clipboard, CTRL+Q quit)"
+		s = " Output (CTRL+L view log, CTRL+J / CTRL+C copy to clipboard, CTRL+Q quit)"
 	}
 	for _, c := range s {
 		termbox.SetCell(x, 0, c, termbox.ColorBlack, termbox.ColorWhite)
@@ -127,7 +127,15 @@ func sendCommand() int {
 	}
 	his.insert(s)
 	q := newQuery(s)
-	q.parse(*xTimeout)
+	if strings.HasPrefix(q.req, "dump ") {
+		fn := strings.TrimSpace(q.req[4:])
+		if outv.query != nil {
+			q.res = outv.query.res
+		}
+		q.err = q.dumpToFile(fn)
+	} else {
+		q.parse(*xTimeout)
+	}
 	w, _ := termbox.Size()
 	outv.append(q, w)
 	outPrompt.deleteAllRunes()
@@ -135,20 +143,28 @@ func sendCommand() int {
 	return 0
 }
 
-func toClipboard() {
+func toClipboard(to string) {
 	var err error
 	var s string
 
 	if outv.query == nil {
 		err = fmt.Errorf("nothing to copy")
 	} else {
-		s, err = outv.query.json()
+		switch to {
+		case "JSON":
+			s, err = outv.query.json()
+		case "CSV":
+			s, err = outv.query.csv()
+		default:
+			panic(fmt.Errorf("unexpected format: %s", to))
+		}
+
 		if err == nil {
 			err = clipboard.WriteAll(s)
 		}
 	}
 	if err == nil {
-		logger.append(fmt.Sprintf("successfully copied last result to clipboard"))
+		logger.append(fmt.Sprintf("successfully copied last result as %s to clipboard", to))
 	} else {
 		logger.append(fmt.Sprintf("cannot copy to clipboard: %s", err.Error()))
 	}
@@ -174,57 +190,60 @@ func getCompletions(p *prompt) []*completion {
 		completions = append(completions, &compl)
 	}
 
-	if len(trimmed) < 6 && strings.HasPrefix("import", trimmed) {
-		compl := completion{
-			text:     "import ",
-			display:  "import",
-			startPos: len(trimmed),
-		}
-		completions = append(completions, &compl)
-	}
-
-	if strings.HasPrefix(trimmed, "import ") {
-		var fn string
-		p := strings.TrimLeft(trimmed[6:], " ")
-		p, fn = path.Split(p)
-
-		if len(p) == 0 {
-			p = "."
-		}
-
-		if files, err := ioutil.ReadDir(p); err == nil {
-			s := strings.TrimSpace(path.Join("..", " "))
-			if strings.HasPrefix(s, fn) {
-				compl := completion{
-					text:     s,
-					display:  s,
-					startPos: len(fn),
-				}
-				completions = append(completions, &compl)
+	for _, prefix := range []string{"import", "dump"} {
+		pps := fmt.Sprintf("%s ", prefix)
+		if len(trimmed) < len(prefix) && strings.HasPrefix(prefix, trimmed) {
+			compl := completion{
+				text:     pps,
+				display:  prefix,
+				startPos: len(trimmed),
 			}
-			for _, f := range files {
-				var s, d string
-				if f.IsDir() {
-					d = strings.TrimSpace(path.Join(f.Name(), " "))
-					s = d[:len(d)-1]
-				} else {
-					d = f.Name()
-					locase := strings.ToLower(d)
-					if !strings.HasSuffix(locase, ".json") && !strings.HasSuffix(locase, ".csv") {
+			completions = append(completions, &compl)
+		}
+
+		if strings.HasPrefix(trimmed, pps) {
+			var fn string
+			p := strings.TrimLeft(trimmed[len(prefix):], " ")
+			p, fn = path.Split(p)
+
+			if len(p) == 0 {
+				p = "."
+			}
+
+			if files, err := ioutil.ReadDir(p); err == nil {
+				s := strings.TrimSpace(path.Join("..", " "))
+				if strings.HasPrefix(s, fn) {
+					compl := completion{
+						text:     s,
+						display:  s,
+						startPos: len(fn),
+					}
+					completions = append(completions, &compl)
+				}
+				for _, f := range files {
+					var s, d string
+					if f.IsDir() {
+						d = strings.TrimSpace(path.Join(f.Name(), " "))
+						s = d[:len(d)-1]
+					} else {
+						d = f.Name()
+						locase := strings.ToLower(d)
+						if !strings.HasSuffix(locase, ".json") && !strings.HasSuffix(locase, ".csv") {
+							continue
+						}
+						s = d
+					}
+					if !strings.HasPrefix(s, fn) {
 						continue
 					}
-					s = d
-				}
-				if !strings.HasPrefix(s, fn) {
-					continue
-				}
 
-				compl := completion{
-					text:     s,
-					display:  d,
-					startPos: len(fn),
+					compl := completion{
+						text:     s,
+						display:  d,
+						startPos: len(fn),
+					}
+					completions = append(completions, &compl)
 				}
-				completions = append(completions, &compl)
 			}
 		}
 	}
@@ -341,6 +360,8 @@ func main() {
 		}
 	}
 
+	outPrompt.completer = getCompletions
+
 	var historyFnP *string
 	historyFn, err := homedir.Dir()
 	if err == nil {
@@ -360,16 +381,16 @@ func main() {
 		logCh, // optional log channel
 	)
 
+	logCh <- fmt.Sprintf("Connecting to database %s...", *xDbname)
+
 	client.Connect()
 	go initConnect()
 	if client.IsAvailable() {
 		currentView = cViewOutput
+		draw()
 	}
-	outPrompt.completer = getCompletions
 
 	defer client.Close()
-
-	draw()
 
 mainloop:
 	for {
@@ -397,7 +418,9 @@ mainloop:
 				case termbox.KeyCtrlL:
 					currentView = cViewLog
 				case termbox.KeyCtrlJ:
-					toClipboard()
+					toClipboard("JSON")
+				case termbox.KeyCtrlC:
+					toClipboard("CSV")
 				case termbox.KeyEnter:
 					outPrompt.clearCompletions()
 					if sendCommand() == 1 {

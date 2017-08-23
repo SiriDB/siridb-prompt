@@ -53,7 +53,7 @@ func importFromFile(fn string, timeout uint16) (interface{}, error) {
 	} else if strings.HasSuffix(strings.ToLower(fn), ".csv") {
 		loader = readCSV
 	} else {
-		return nil, fmt.Errorf("Only .json or .csv files are supported")
+		return nil, fmt.Errorf("only .json or .csv files are supported")
 	}
 
 	data, err := ioutil.ReadFile(fn)
@@ -67,6 +67,28 @@ func importFromFile(fn string, timeout uint16) (interface{}, error) {
 	}
 
 	return client.Insert(v, timeout)
+}
+
+func (q *query) dumpToFile(fn string) error {
+	var s string
+	var e error
+	if strings.HasSuffix(strings.ToLower(fn), ".json") {
+		s, e = q.json()
+	} else if strings.HasSuffix(strings.ToLower(fn), ".csv") {
+		s, e = q.csv()
+	} else {
+		return fmt.Errorf("only .json or .csv files are supported")
+	}
+
+	if e != nil {
+		return e
+	}
+
+	e = ioutil.WriteFile(fn, []byte(s), 0644)
+	if e != nil {
+		return e
+	}
+	return fmt.Errorf("last result successfully dumped to: %s", fn)
 }
 
 func (q *query) parse(timeout uint16) {
@@ -88,4 +110,15 @@ func (q *query) json() (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func (q *query) csv() (string, error) {
+	if q.res == nil {
+		return "", fmt.Errorf("nothing to CSVify")
+	}
+	m, ok := q.res.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("cannot convert data to CSV")
+	}
+	return toCsv(m)
 }
