@@ -3,7 +3,7 @@
 
 SiriDB Prompt provides a terminal client for communicating with [SiriDB](https://github.com/transceptor-technology/siridb-server).
 
-> Note: Since version 2.1.0 SiriDB Prompt is written in Go. For the 2.0.x version in Python you should go to
+> Note: Since version 2.1.0 SiriDB Prompt is written in Go. For the most recent version in Python you should go to
 > this [release tag](https://github.com/transceptor-technology/siridb-prompt/tree/2.0.6).
 
 ---------------------------------------
