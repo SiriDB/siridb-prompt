@@ -47,6 +47,7 @@ const cViewLog = 0
 const cViewOutput = 1
 
 var logger = newLogView()
+var isDrawwing = false
 var outv = newView()
 var client *siridb.Client
 var currentView = cViewLog
@@ -54,14 +55,6 @@ var outPrompt = newPrompt(">>> ", coldef|termbox.AttrBold, coldef)
 var his *history
 var siriGrammar = SiriGrammar()
 var timePrecision *string
-
-func logHandle(logCh chan string) {
-	for {
-		msg := <-logCh
-		logger.append(msg)
-		draw()
-	}
-}
 
 func drawPassPrompt(p *prompt) {
 	termbox.Clear(coldef, coldef)
@@ -71,6 +64,10 @@ func drawPassPrompt(p *prompt) {
 }
 
 func draw() {
+	if isDrawwing {
+		return
+	}
+	isDrawwing = true
 	termbox.Clear(coldef, coldef)
 	w, h := termbox.Size()
 	x := 0
@@ -118,6 +115,7 @@ func draw() {
 	}
 
 	termbox.Flush()
+	isDrawwing = false
 }
 
 func sendCommand() int {
@@ -164,9 +162,9 @@ func toClipboard(to string) {
 		}
 	}
 	if err == nil {
-		logger.append(fmt.Sprintf("successfully copied last result as %s to clipboard", to))
+		logger.ch <- fmt.Sprintf("successfully copied last result as %s to clipboard", to)
 	} else {
-		logger.append(fmt.Sprintf("cannot copy to clipboard: %s", err.Error()))
+		logger.ch <- fmt.Sprintf("cannot copy to clipboard: %s", err.Error())
 	}
 }
 
@@ -174,7 +172,7 @@ func getCompletions(p *prompt) []*completion {
 	q := p.textBeforeCursor()
 	res, err := siriGrammar.Parse(q)
 	if err != nil {
-		logger.append(fmt.Sprintf("goleri parse error: %s", err.Error()))
+		logger.ch <- fmt.Sprintf("goleri parse error: %s", err.Error())
 		return nil
 	}
 
@@ -272,44 +270,45 @@ func initConnect() {
 	}
 	res, err := client.Query("show time_precision", 10)
 	if err != nil {
-		logger.append(fmt.Sprintf("error reading time_precision: %s", err.Error()))
+		logger.ch <- fmt.Sprintf("error reading time_precision: %s", err.Error())
 		return
 	}
 	v, ok := res.(map[string]interface{})
 	if !ok {
-		logger.append("error reading time_precision: missing 'map' in data")
+		logger.ch <- "error reading time_precision: missing 'map' in data"
 		return
 	}
 
 	arr, ok := v["data"].([]interface{})
 	if !ok || len(arr) != 1 {
-		logger.append("error reading time_precision: missing array 'data' or length 1 in map")
+		logger.ch <- "error reading time_precision: missing array 'data' or length 1 in map"
 		return
 	}
 
 	tp, ok = arr[0].(map[string]interface{})["value"].(string)
 
 	if !ok {
-		logger.append("error reading time_precision: cannot find time_precision in data")
+		logger.ch <- "error reading time_precision: cannot find time_precision in data"
 		return
 	}
 
-	logger.append(fmt.Sprintf("finished reading time precision: '%s'", tp))
+	logger.ch <- fmt.Sprintf("finished reading time precision: '%s'", tp)
 	timePrecision = &tp
 }
 
 func main() {
 	rand.Seed(time.Now().Unix())
+	go logger.handle()
 
 	_, err := xApp.Parse(os.Args[1:])
-	if err != nil {
-		fmt.Printf("%s\n", err)
-		os.Exit(1)
-	}
-
 	if *xVersion {
 		fmt.Printf("Version: %s\n", AppVersion)
 		os.Exit(0)
+	}
+
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
 	}
 
 	if *xJSON {
@@ -320,13 +319,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
 	termbox.SetOutputMode(termbox.Output256)
-
-	logCh := make(chan string)
-
-	go logHandle(logCh)
 
 	var servers []server
 	servers, err = getServers(*xServers)
@@ -380,16 +376,15 @@ func main() {
 		*xPassword,                  // password
 		*xDbname,                    // database
 		serversToInterface(servers), // siridb server(s)
-		logCh, // optional log channel
+		logger.ch,                   // optional log channel
 	)
 
-	logCh <- fmt.Sprintf("Connecting to database %s...", *xDbname)
+	logger.ch <- fmt.Sprintf("Connecting to database %s...", *xDbname)
 
 	client.Connect()
 	go initConnect()
 	if client.IsAvailable() {
 		currentView = cViewOutput
-		draw()
 	}
 
 	defer client.Close()

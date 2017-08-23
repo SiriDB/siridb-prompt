@@ -15,18 +15,24 @@ type logEntry struct {
 type logView struct {
 	pos     int
 	entries []logEntry
+	ch      chan string
 }
 
 func newLogView() *logView {
 	l := logView{
 		pos:     -1,
 		entries: make([]logEntry, 0),
+		ch:      make(chan string),
 	}
 	return &l
 }
 
-func (l *logView) append(msg string) {
-	l.entries = append(l.entries, logEntry{time.Now(), msg})
+func (l *logView) handle() {
+	for {
+		msg := <-l.ch
+		l.entries = append(l.entries, logEntry{time.Now(), msg})
+		draw()
+	}
 }
 
 func (l *logView) draw(w, h int) {

@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,6 +14,9 @@ func toCsv(m map[string]interface{}) (string, error) {
 	l := make([]string, 0)
 	if err := getLines(m, &l); err != nil {
 		return "", err
+	}
+	if runtime.GOOS == "windows" {
+		return strings.Join(l, "\r\n"), nil
 	}
 	return strings.Join(l, "\n"), nil
 }

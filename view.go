@@ -368,7 +368,7 @@ func (v *view) trySelect(m map[string]interface{}, w int) error {
 }
 
 func (v *view) error(err error, w int) {
-	logger.append(err.Error())
+	logger.ch <- err.Error()
 	v.addString(err.Error(), w)
 }
 
