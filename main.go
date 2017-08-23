@@ -331,7 +331,9 @@ func main() {
 	var servers []server
 	servers, err = getServers(*xServers)
 	if err != nil {
-		logger.append(fmt.Sprintf("error reading servers: %s", err))
+		termbox.Close()
+		fmt.Printf("error reading servers: %s\n", err.Error())
+		os.Exit(1)
 	}
 
 	if len(*xPassword) == 0 {

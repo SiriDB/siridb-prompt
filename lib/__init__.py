@@ -1,3 +1,0 @@
-'''
-Libs for SiriDB Prompt.
-'''
