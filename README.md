@@ -1,10 +1,10 @@
 # SiriDB Prompt
 ![alt SiriDB Prompt](/siridb-prompt.png?raw=true)
 
-SiriDB Prompt provides a terminal client for communicating with [SiriDB](https://github.com/transceptor-technology/siridb-server).
+SiriDB Prompt provides a terminal client for communicating with [SiriDB](https://github.com/SiriDB/siridb-server).
 
 > Note: Since version 2.1.0 SiriDB Prompt is written in Go. For the most recent version in Python you should go to
-> this [release tag](https://github.com/transceptor-technology/siridb-prompt/tree/2.0.6).
+> this [release tag](https://github.com/SiriDB/siridb-prompt/tree/2.0.6).
 
 ---------------------------------------
   * [Installation](#installation)
@@ -17,7 +17,7 @@ SiriDB Prompt provides a terminal client for communicating with [SiriDB](https:/
 SiriDB Prompt can be compiled from source or, for most systems, you can simply download a pre-compiled binary.
 
 ### Pre-compiled
-Go to https://github.com/transceptor-technology/siridb-prompt/releases/latest and download the binary for your system.
+Go to https://github.com/SiriDB/siridb-prompt/releases/latest and download the binary for your system.
 In this documentation we refer to the binary as `siridb-prompt`. On Linux/OSX it might be required to set the execution flag:
 ```
 $ chmod +x siridb-prompt_X.Y.Z_OS_ARCH.bin
@@ -35,7 +35,7 @@ $ sudo ln -s /usr/local/bin/siridb-prompt_X.Y.Z_OS_ARCH.bin /usr/local/bin/sirid
 
 Clone the project using git. (we assume git is installed)
 ```
-git clone https://github.com/transceptor-technology/siridb-prompt
+git clone https://github.com/SiriDB/siridb-prompt
 ```
 
 Install the required go packages
