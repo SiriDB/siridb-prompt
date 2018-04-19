@@ -4,7 +4,7 @@ package main
 // should be used with the goleri module.
 //
 // Source class: SiriGrammar
-// Created at: 2017-08-14 15:06:00
+// Created at: 2018-03-30 21:57:58
 
 import (
 	"regexp"
@@ -14,281 +14,291 @@ import (
 
 // Element identifiers
 const (
-	NoGid                   = iota
-	GidAccessExpr           = iota
-	GidAccessKeywords       = iota
-	GidAfterExpr            = iota
-	GidAggregateFunctions   = iota
-	GidAlterDatabase        = iota
-	GidAlterGroup           = iota
-	GidAlterServer          = iota
-	GidAlterServers         = iota
-	GidAlterStmt            = iota
-	GidAlterUser            = iota
-	GidBeforeExpr           = iota
-	GidBetweenExpr          = iota
-	GidBoolOperator         = iota
-	GidBoolean              = iota
-	GidCDifference          = iota
-	GidCalcStmt             = iota
-	GidCountGroups          = iota
-	GidCountPools           = iota
-	GidCountSeries          = iota
-	GidCountSeriesLength    = iota
-	GidCountServers         = iota
+	NoGid = iota
+	GidAccessExpr = iota
+	GidAccessKeywords = iota
+	GidAfterExpr = iota
+	GidAggregateFunctions = iota
+	GidAlterDatabase = iota
+	GidAlterGroup = iota
+	GidAlterServer = iota
+	GidAlterServers = iota
+	GidAlterStmt = iota
+	GidAlterUser = iota
+	GidBeforeExpr = iota
+	GidBetweenExpr = iota
+	GidBoolOperator = iota
+	GidBoolean = iota
+	GidCDifference = iota
+	GidCalcStmt = iota
+	GidCountGroups = iota
+	GidCountPools = iota
+	GidCountSeries = iota
+	GidCountSeriesLength = iota
+	GidCountServers = iota
 	GidCountServersReceived = iota
 	GidCountServersSelected = iota
-	GidCountShards          = iota
-	GidCountShardsSize      = iota
-	GidCountStmt            = iota
-	GidCountUsers           = iota
-	GidCreateGroup          = iota
-	GidCreateStmt           = iota
-	GidCreateUser           = iota
-	GidDropGroup            = iota
-	GidDropSeries           = iota
-	GidDropServer           = iota
-	GidDropShards           = iota
-	GidDropStmt             = iota
-	GidDropUser             = iota
-	GidFCount               = iota
-	GidFDerivative          = iota
-	GidFDifference          = iota
-	GidFFilter              = iota
-	GidFLimit               = iota
-	GidFMax                 = iota
-	GidFMean                = iota
-	GidFMedian              = iota
-	GidFMedianHigh          = iota
-	GidFMedianLow           = iota
-	GidFMin                 = iota
-	GidFPoints              = iota
-	GidFPvariance           = iota
-	GidFSum                 = iota
-	GidFVariance            = iota
-	GidGrantStmt            = iota
-	GidGrantUser            = iota
-	GidGroupColumns         = iota
-	GidGroupMatch           = iota
-	GidGroupName            = iota
-	GidHelp                 = iota
-	GidHelpAccess           = iota
-	GidHelpAlter            = iota
-	GidHelpAlterDatabase    = iota
-	GidHelpAlterGroup       = iota
-	GidHelpAlterServer      = iota
-	GidHelpAlterServers     = iota
-	GidHelpAlterUser        = iota
-	GidHelpCount            = iota
-	GidHelpCountGroups      = iota
-	GidHelpCountPools       = iota
-	GidHelpCountSeries      = iota
-	GidHelpCountServers     = iota
-	GidHelpCountShards      = iota
-	GidHelpCountUsers       = iota
-	GidHelpCreate           = iota
-	GidHelpCreateGroup      = iota
-	GidHelpCreateUser       = iota
-	GidHelpDrop             = iota
-	GidHelpDropGroup        = iota
-	GidHelpDropSeries       = iota
-	GidHelpDropServer       = iota
-	GidHelpDropShards       = iota
-	GidHelpDropUser         = iota
-	GidHelpFunctions        = iota
-	GidHelpGrant            = iota
-	GidHelpList             = iota
-	GidHelpListGroups       = iota
-	GidHelpListPools        = iota
-	GidHelpListSeries       = iota
-	GidHelpListServers      = iota
-	GidHelpListShards       = iota
-	GidHelpListUsers        = iota
-	GidHelpNoaccess         = iota
-	GidHelpRevoke           = iota
-	GidHelpSelect           = iota
-	GidHelpShow             = iota
-	GidHelpTimeit           = iota
-	GidHelpTimezones        = iota
-	GidIntExpr              = iota
-	GidIntOperator          = iota
-	GidKAccess              = iota
-	GidKActiveHandles       = iota
-	GidKAddress             = iota
-	GidKAfter               = iota
-	GidKAlter               = iota
-	GidKAnd                 = iota
-	GidKAs                  = iota
-	GidKBackupMode          = iota
-	GidKBefore              = iota
-	GidKBetween             = iota
-	GidKBufferPath          = iota
-	GidKBufferSize          = iota
-	GidKCount               = iota
-	GidKCreate              = iota
-	GidKCritical            = iota
-	GidKDatabase            = iota
-	GidKDbname              = iota
-	GidKDbpath              = iota
-	GidKDebug               = iota
-	GidKDerivative          = iota
-	GidKDifference          = iota
-	GidKDrop                = iota
-	GidKDropThreshold       = iota
-	GidKDurationLog         = iota
-	GidKDurationNum         = iota
-	GidKEnd                 = iota
-	GidKError               = iota
-	GidKExpression          = iota
-	GidKFalse               = iota
-	GidKFifoFiles           = iota
-	GidKFilter              = iota
-	GidKFloat               = iota
-	GidKFor                 = iota
-	GidKFrom                = iota
-	GidKFull                = iota
-	GidKGrant               = iota
-	GidKGroup               = iota
-	GidKGroups              = iota
-	GidKHelp                = iota
-	GidKIgnoreThreshold     = iota
-	GidKInfo                = iota
-	GidKInsert              = iota
-	GidKInteger             = iota
-	GidKIntersection        = iota
-	GidKIpSupport           = iota
-	GidKLength              = iota
-	GidKLibuv               = iota
-	GidKLimit               = iota
-	GidKList                = iota
-	GidKListLimit           = iota
-	GidKLog                 = iota
-	GidKLogLevel            = iota
-	GidKMax                 = iota
-	GidKMaxOpenFiles        = iota
-	GidKMean                = iota
-	GidKMedian              = iota
-	GidKMedianHigh          = iota
-	GidKMedianLow           = iota
-	GidKMemUsage            = iota
-	GidKMerge               = iota
-	GidKMin                 = iota
-	GidKModify              = iota
-	GidKName                = iota
-	GidKNow                 = iota
-	GidKNumber              = iota
-	GidKOnline              = iota
-	GidKOpenFiles           = iota
-	GidKOr                  = iota
-	GidKPassword            = iota
-	GidKPoints              = iota
-	GidKPool                = iota
-	GidKPools               = iota
-	GidKPort                = iota
-	GidKPrefix              = iota
-	GidKPvariance           = iota
-	GidKRead                = iota
-	GidKReceivedPoints      = iota
-	GidKReindexProgress     = iota
-	GidKRevoke              = iota
-	GidKSelect              = iota
-	GidKSelectPointsLimit   = iota
-	GidKSelectedPoints      = iota
-	GidKSeries              = iota
-	GidKServer              = iota
-	GidKServers             = iota
-	GidKSet                 = iota
-	GidKShards              = iota
-	GidKShow                = iota
-	GidKSid                 = iota
-	GidKSize                = iota
-	GidKStart               = iota
-	GidKStartupTime         = iota
-	GidKStatus              = iota
-	GidKString              = iota
-	GidKSuffix              = iota
-	GidKSum                 = iota
+	GidCountShards = iota
+	GidCountShardsSize = iota
+	GidCountStmt = iota
+	GidCountUsers = iota
+	GidCreateGroup = iota
+	GidCreateStmt = iota
+	GidCreateUser = iota
+	GidDropGroup = iota
+	GidDropSeries = iota
+	GidDropServer = iota
+	GidDropShards = iota
+	GidDropStmt = iota
+	GidDropUser = iota
+	GidFAll = iota
+	GidFCount = iota
+	GidFDerivative = iota
+	GidFDifference = iota
+	GidFFilter = iota
+	GidFFirst = iota
+	GidFLast = iota
+	GidFLimit = iota
+	GidFMax = iota
+	GidFMean = iota
+	GidFMedian = iota
+	GidFMedianHigh = iota
+	GidFMedianLow = iota
+	GidFMin = iota
+	GidFPoints = iota
+	GidFPvariance = iota
+	GidFStddev = iota
+	GidFSum = iota
+	GidFVariance = iota
+	GidGrantStmt = iota
+	GidGrantUser = iota
+	GidGroupColumns = iota
+	GidGroupMatch = iota
+	GidGroupName = iota
+	GidHelp = iota
+	GidHelpAccess = iota
+	GidHelpAlter = iota
+	GidHelpAlterDatabase = iota
+	GidHelpAlterGroup = iota
+	GidHelpAlterServer = iota
+	GidHelpAlterServers = iota
+	GidHelpAlterUser = iota
+	GidHelpCount = iota
+	GidHelpCountGroups = iota
+	GidHelpCountPools = iota
+	GidHelpCountSeries = iota
+	GidHelpCountServers = iota
+	GidHelpCountShards = iota
+	GidHelpCountUsers = iota
+	GidHelpCreate = iota
+	GidHelpCreateGroup = iota
+	GidHelpCreateUser = iota
+	GidHelpDrop = iota
+	GidHelpDropGroup = iota
+	GidHelpDropSeries = iota
+	GidHelpDropServer = iota
+	GidHelpDropShards = iota
+	GidHelpDropUser = iota
+	GidHelpFunctions = iota
+	GidHelpGrant = iota
+	GidHelpList = iota
+	GidHelpListGroups = iota
+	GidHelpListPools = iota
+	GidHelpListSeries = iota
+	GidHelpListServers = iota
+	GidHelpListShards = iota
+	GidHelpListUsers = iota
+	GidHelpNoaccess = iota
+	GidHelpRevoke = iota
+	GidHelpSelect = iota
+	GidHelpShow = iota
+	GidHelpTimeit = iota
+	GidHelpTimezones = iota
+	GidIntExpr = iota
+	GidIntOperator = iota
+	GidKAccess = iota
+	GidKActiveHandles = iota
+	GidKAddress = iota
+	GidKAfter = iota
+	GidKAll = iota
+	GidKAlter = iota
+	GidKAnd = iota
+	GidKAs = iota
+	GidKBackupMode = iota
+	GidKBefore = iota
+	GidKBetween = iota
+	GidKBufferPath = iota
+	GidKBufferSize = iota
+	GidKCount = iota
+	GidKCreate = iota
+	GidKCritical = iota
+	GidKDatabase = iota
+	GidKDbname = iota
+	GidKDbpath = iota
+	GidKDebug = iota
+	GidKDerivative = iota
+	GidKDifference = iota
+	GidKDrop = iota
+	GidKDropThreshold = iota
+	GidKDurationLog = iota
+	GidKDurationNum = iota
+	GidKEnd = iota
+	GidKError = iota
+	GidKExpression = iota
+	GidKFalse = iota
+	GidKFifoFiles = iota
+	GidKFilter = iota
+	GidKFirst = iota
+	GidKFloat = iota
+	GidKFor = iota
+	GidKFrom = iota
+	GidKFull = iota
+	GidKGrant = iota
+	GidKGroup = iota
+	GidKGroups = iota
+	GidKHelp = iota
+	GidKIgnoreThreshold = iota
+	GidKInfo = iota
+	GidKInsert = iota
+	GidKInteger = iota
+	GidKIntersection = iota
+	GidKIpSupport = iota
+	GidKLast = iota
+	GidKLength = iota
+	GidKLibuv = iota
+	GidKLimit = iota
+	GidKList = iota
+	GidKListLimit = iota
+	GidKLog = iota
+	GidKLogLevel = iota
+	GidKMax = iota
+	GidKMaxOpenFiles = iota
+	GidKMean = iota
+	GidKMedian = iota
+	GidKMedianHigh = iota
+	GidKMedianLow = iota
+	GidKMemUsage = iota
+	GidKMerge = iota
+	GidKMin = iota
+	GidKModify = iota
+	GidKName = iota
+	GidKNow = iota
+	GidKNumber = iota
+	GidKOnline = iota
+	GidKOpenFiles = iota
+	GidKOr = iota
+	GidKPassword = iota
+	GidKPoints = iota
+	GidKPool = iota
+	GidKPools = iota
+	GidKPort = iota
+	GidKPrefix = iota
+	GidKPvariance = iota
+	GidKRead = iota
+	GidKReceivedPoints = iota
+	GidKReindexProgress = iota
+	GidKRevoke = iota
+	GidKSelect = iota
+	GidKSelectPointsLimit = iota
+	GidKSelectedPoints = iota
+	GidKSeries = iota
+	GidKServer = iota
+	GidKServers = iota
+	GidKSet = iota
+	GidKShards = iota
+	GidKShow = iota
+	GidKSid = iota
+	GidKSize = iota
+	GidKStart = iota
+	GidKStartupTime = iota
+	GidKStatus = iota
+	GidKStddev = iota
+	GidKString = iota
+	GidKSuffix = iota
+	GidKSum = iota
 	GidKSymmetricDifference = iota
-	GidKSyncProgress        = iota
-	GidKTimePrecision       = iota
-	GidKTimeit              = iota
-	GidKTimezone            = iota
-	GidKTo                  = iota
-	GidKTrue                = iota
-	GidKType                = iota
-	GidKUnion               = iota
-	GidKUptime              = iota
-	GidKUser                = iota
-	GidKUsers               = iota
-	GidKUsing               = iota
-	GidKUuid                = iota
-	GidKVariance            = iota
-	GidKVersion             = iota
-	GidKWarning             = iota
-	GidKWhere               = iota
-	GidKWhoAmI              = iota
-	GidKWrite               = iota
-	GidLimitExpr            = iota
-	GidListGroups           = iota
-	GidListPools            = iota
-	GidListSeries           = iota
-	GidListServers          = iota
-	GidListShards           = iota
-	GidListStmt             = iota
-	GidListUsers            = iota
-	GidLogKeywords          = iota
-	GidMergeAs              = iota
-	GidPoolColumns          = iota
-	GidPoolProps            = iota
-	GidPrefixExpr           = iota
-	GidRComment             = iota
-	GidRDoubleqStr          = iota
-	GidRFloat               = iota
-	GidRGraveStr            = iota
-	GidRInteger             = iota
-	GidRRegex               = iota
-	GidRSingleqStr          = iota
-	GidRTimeStr             = iota
-	GidRUinteger            = iota
-	GidRUuidStr             = iota
-	GidRevokeStmt           = iota
-	GidRevokeUser           = iota
-	GidSTART                = iota
-	GidSelectAggregate      = iota
-	GidSelectStmt           = iota
-	GidSeriesColumns        = iota
-	GidSeriesMatch          = iota
-	GidSeriesName           = iota
-	GidSeriesRe             = iota
-	GidSeriesSep            = iota
-	GidServerColumns        = iota
-	GidSetAddress           = iota
-	GidSetBackupMode        = iota
-	GidSetDropThreshold     = iota
-	GidSetExpression        = iota
-	GidSetIgnoreThreshold   = iota
-	GidSetListLimit         = iota
-	GidSetLogLevel          = iota
-	GidSetName              = iota
-	GidSetPassword          = iota
-	GidSetPort              = iota
+	GidKSyncProgress = iota
+	GidKTimePrecision = iota
+	GidKTimeit = iota
+	GidKTimezone = iota
+	GidKTo = iota
+	GidKTrue = iota
+	GidKType = iota
+	GidKUnion = iota
+	GidKUptime = iota
+	GidKUser = iota
+	GidKUsers = iota
+	GidKUsing = iota
+	GidKUuid = iota
+	GidKVariance = iota
+	GidKVersion = iota
+	GidKWarning = iota
+	GidKWhere = iota
+	GidKWhoAmI = iota
+	GidKWrite = iota
+	GidLimitExpr = iota
+	GidListGroups = iota
+	GidListPools = iota
+	GidListSeries = iota
+	GidListServers = iota
+	GidListShards = iota
+	GidListStmt = iota
+	GidListUsers = iota
+	GidLogKeywords = iota
+	GidMergeAs = iota
+	GidPoolColumns = iota
+	GidPoolProps = iota
+	GidPrefixExpr = iota
+	GidRComment = iota
+	GidRDoubleqStr = iota
+	GidRFloat = iota
+	GidRGraveStr = iota
+	GidRInteger = iota
+	GidRRegex = iota
+	GidRSingleqStr = iota
+	GidRTimeStr = iota
+	GidRUinteger = iota
+	GidRUuidStr = iota
+	GidRevokeStmt = iota
+	GidRevokeUser = iota
+	GidSTART = iota
+	GidSelectAggregate = iota
+	GidSelectAggregates = iota
+	GidSelectStmt = iota
+	GidSeriesAll = iota
+	GidSeriesColumns = iota
+	GidSeriesMatch = iota
+	GidSeriesName = iota
+	GidSeriesRe = iota
+	GidSeriesSep = iota
+	GidServerColumns = iota
+	GidSetAddress = iota
+	GidSetBackupMode = iota
+	GidSetDropThreshold = iota
+	GidSetExpression = iota
+	GidSetIgnoreThreshold = iota
+	GidSetListLimit = iota
+	GidSetLogLevel = iota
+	GidSetName = iota
+	GidSetPassword = iota
+	GidSetPort = iota
 	GidSetSelectPointsLimit = iota
-	GidSetTimezone          = iota
-	GidShardColumns         = iota
-	GidShowStmt             = iota
-	GidStrOperator          = iota
-	GidString               = iota
-	GidSuffixExpr           = iota
-	GidTimeExpr             = iota
-	GidTimeitStmt           = iota
-	GidUserColumns          = iota
-	GidUuid                 = iota
-	GidWhereGroup           = iota
-	GidWherePool            = iota
-	GidWhereSeries          = iota
-	GidWhereServer          = iota
-	GidWhereShard           = iota
-	GidWhereUser            = iota
+	GidSetTimezone = iota
+	GidShardColumns = iota
+	GidShowStmt = iota
+	GidStrOperator = iota
+	GidString = iota
+	GidSuffixExpr = iota
+	GidTimeExpr = iota
+	GidTimeitStmt = iota
+	GidUserColumns = iota
+	GidUuid = iota
+	GidWhereGroup = iota
+	GidWherePool = iota
+	GidWhereSeries = iota
+	GidWhereServer = iota
+	GidWhereShard = iota
+	GidWhereUser = iota
 )
 
 // SiriGrammar returns a compiled goleri grammar.
@@ -299,7 +309,7 @@ func SiriGrammar() *goleri.Grammar {
 	rTimeStr := goleri.NewRegex(GidRTimeStr, regexp.MustCompile(`^[0-9]+[smhdw]`))
 	rSingleqStr := goleri.NewRegex(GidRSingleqStr, regexp.MustCompile(`^(?:'(?:[^']*)')+`))
 	rDoubleqStr := goleri.NewRegex(GidRDoubleqStr, regexp.MustCompile(`^(?:"(?:[^"]*)")+`))
-	rGraveStr := goleri.NewRegex(GidRGraveStr, regexp.MustCompile(`^(?:`+"`"+`(?:[^`+"`"+`]*)`+"`"+`)+`))
+	rGraveStr := goleri.NewRegex(GidRGraveStr, regexp.MustCompile(`^(?:` + "`" + `(?:[^` + "`" + `]*)` + "`" + `)+`))
 	rUuidStr := goleri.NewRegex(GidRUuidStr, regexp.MustCompile(`^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}`))
 	rRegex := goleri.NewRegex(GidRRegex, regexp.MustCompile(`^(/[^/\\]*(?:\\.[^/\\]*)*/i?)`))
 	rComment := goleri.NewRegex(GidRComment, regexp.MustCompile(`^#.*`))
@@ -307,6 +317,7 @@ func SiriGrammar() *goleri.Grammar {
 	kActiveHandles := goleri.NewKeyword(GidKActiveHandles, "active_handles", false)
 	kAddress := goleri.NewKeyword(GidKAddress, "address", false)
 	kAfter := goleri.NewKeyword(GidKAfter, "after", false)
+	kAll := goleri.NewKeyword(GidKAll, "all", false)
 	kAlter := goleri.NewKeyword(GidKAlter, "alter", false)
 	kAnd := goleri.NewKeyword(GidKAnd, "and", false)
 	kAs := goleri.NewKeyword(GidKAs, "as", false)
@@ -334,6 +345,7 @@ func SiriGrammar() *goleri.Grammar {
 	kFalse := goleri.NewKeyword(GidKFalse, "false", false)
 	kFifoFiles := goleri.NewKeyword(GidKFifoFiles, "fifo_files", false)
 	kFilter := goleri.NewKeyword(GidKFilter, "filter", false)
+	kFirst := goleri.NewKeyword(GidKFirst, "first", false)
 	kFloat := goleri.NewKeyword(GidKFloat, "float", false)
 	kFor := goleri.NewKeyword(GidKFor, "for", false)
 	kFrom := goleri.NewKeyword(GidKFrom, "from", false)
@@ -358,6 +370,7 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewKeyword(NoGid, "intersection", false),
 	)
 	kIpSupport := goleri.NewKeyword(GidKIpSupport, "ip_support", false)
+	kLast := goleri.NewKeyword(GidKLast, "last", false)
 	kLength := goleri.NewKeyword(GidKLength, "length", false)
 	kLibuv := goleri.NewKeyword(GidKLibuv, "libuv", false)
 	kLimit := goleri.NewKeyword(GidKLimit, "limit", false)
@@ -406,6 +419,7 @@ func SiriGrammar() *goleri.Grammar {
 	kStart := goleri.NewKeyword(GidKStart, "start", false)
 	kStartupTime := goleri.NewKeyword(GidKStartupTime, "startup_time", false)
 	kStatus := goleri.NewKeyword(GidKStatus, "status", false)
+	kStddev := goleri.NewKeyword(GidKStddev, "stddev", false)
 	kString := goleri.NewKeyword(GidKString, "string", false)
 	kSuffix := goleri.NewKeyword(GidKSuffix, "suffix", false)
 	kSum := goleri.NewKeyword(GidKSum, "sum", false)
@@ -925,6 +939,12 @@ func SiriGrammar() *goleri.Grammar {
 		kIntersection,
 		kSymmetricDifference,
 	)
+	seriesAll := goleri.NewChoice(
+		GidSeriesAll,
+		false,
+		goleri.NewToken(NoGid, "*"),
+		kAll,
+	)
 	seriesName := goleri.NewRepeat(GidSeriesName, string, 1, 1)
 	groupName := goleri.NewRepeat(GidGroupName, rGraveStr, 1, 1)
 	seriesRe := goleri.NewRepeat(GidSeriesRe, rRegex, 1, 1)
@@ -938,6 +958,7 @@ func SiriGrammar() *goleri.Grammar {
 	seriesMatch := goleri.NewList(GidSeriesMatch, goleri.NewChoice(
 		NoGid,
 		false,
+		seriesAll,
 		seriesName,
 		groupMatch,
 		seriesRe,
@@ -975,12 +996,13 @@ func SiriGrammar() *goleri.Grammar {
 		kSuffix,
 		string,
 	)
-	fPoints := goleri.NewChoice(
-		GidFPoints,
+	fAll := goleri.NewChoice(
+		GidFAll,
 		false,
 		goleri.NewToken(NoGid, "*"),
-		kPoints,
+		kAll,
 	)
+	fPoints := goleri.NewRepeat(GidFPoints, kPoints, 1, 1)
 	fDifference := goleri.NewSequence(
 		GidFDifference,
 		kDifference,
@@ -999,70 +1021,91 @@ func SiriGrammar() *goleri.Grammar {
 		GidFMean,
 		kMean,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fMedian := goleri.NewSequence(
 		GidFMedian,
 		kMedian,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fMedianLow := goleri.NewSequence(
 		GidFMedianLow,
 		kMedianLow,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fMedianHigh := goleri.NewSequence(
 		GidFMedianHigh,
 		kMedianHigh,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fSum := goleri.NewSequence(
 		GidFSum,
 		kSum,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fMin := goleri.NewSequence(
 		GidFMin,
 		kMin,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fMax := goleri.NewSequence(
 		GidFMax,
 		kMax,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fCount := goleri.NewSequence(
 		GidFCount,
 		kCount,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fVariance := goleri.NewSequence(
 		GidFVariance,
 		kVariance,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fPvariance := goleri.NewSequence(
 		GidFPvariance,
 		kPvariance,
 		goleri.NewToken(NoGid, "("),
-		timeExpr,
+		goleri.NewOptional(NoGid, timeExpr),
+		goleri.NewToken(NoGid, ")"),
+	)
+	fStddev := goleri.NewSequence(
+		GidFStddev,
+		kStddev,
+		goleri.NewToken(NoGid, "("),
+		goleri.NewOptional(NoGid, timeExpr),
+		goleri.NewToken(NoGid, ")"),
+	)
+	fFirst := goleri.NewSequence(
+		GidFFirst,
+		kFirst,
+		goleri.NewToken(NoGid, "("),
+		goleri.NewOptional(NoGid, timeExpr),
+		goleri.NewToken(NoGid, ")"),
+	)
+	fLast := goleri.NewSequence(
+		GidFLast,
+		kLast,
+		goleri.NewToken(NoGid, "("),
+		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
 	fFilter := goleri.NewSequence(
@@ -1098,13 +1141,16 @@ func SiriGrammar() *goleri.Grammar {
 			kCount,
 			kVariance,
 			kPvariance,
+			kStddev,
+			kFirst,
+			kLast,
 		),
 		goleri.NewToken(NoGid, ")"),
 	)
 	aggregateFunctions := goleri.NewList(GidAggregateFunctions, goleri.NewChoice(
 		NoGid,
 		false,
-		fPoints,
+		fAll,
 		fLimit,
 		fMean,
 		fSum,
@@ -1116,9 +1162,13 @@ func SiriGrammar() *goleri.Grammar {
 		fCount,
 		fVariance,
 		fPvariance,
+		fStddev,
+		fFirst,
+		fLast,
 		fDifference,
 		fDerivative,
 		fFilter,
+		fPoints,
 	), goleri.NewToken(NoGid, "=>"), 1, 0, false)
 	selectAggregate := goleri.NewSequence(
 		GidSelectAggregate,
@@ -1126,6 +1176,7 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewOptional(NoGid, prefixExpr),
 		goleri.NewOptional(NoGid, suffixExpr),
 	)
+	selectAggregates := goleri.NewList(GidSelectAggregates, selectAggregate, goleri.NewToken(NoGid, ","), 1, 0, false)
 	mergeAs := goleri.NewSequence(
 		GidMergeAs,
 		kMerge,
@@ -1502,7 +1553,7 @@ func SiriGrammar() *goleri.Grammar {
 	selectStmt := goleri.NewSequence(
 		GidSelectStmt,
 		kSelect,
-		goleri.NewList(NoGid, selectAggregate, goleri.NewToken(NoGid, ","), 1, 0, false),
+		selectAggregates,
 		kFrom,
 		seriesMatch,
 		goleri.NewOptional(NoGid, whereSeries),
@@ -1555,88 +1606,33 @@ func SiriGrammar() *goleri.Grammar {
 		), goleri.NewToken(NoGid, ","), 0, 0, false),
 	)
 	timeitStmt := goleri.NewRepeat(GidTimeitStmt, kTimeit, 1, 1)
-	helpShow := goleri.NewKeyword(GidHelpShow, "show", false)
-	helpRevoke := goleri.NewKeyword(GidHelpRevoke, "revoke", false)
-	helpNoaccess := goleri.NewKeyword(GidHelpNoaccess, "noaccess", false)
-	helpFunctions := goleri.NewKeyword(GidHelpFunctions, "functions", false)
-	helpGrant := goleri.NewKeyword(GidHelpGrant, "grant", false)
-	helpAccess := goleri.NewKeyword(GidHelpAccess, "access", false)
-	helpListUsers := goleri.NewKeyword(GidHelpListUsers, "users", false)
-	helpListPools := goleri.NewKeyword(GidHelpListPools, "pools", false)
-	helpListSeries := goleri.NewKeyword(GidHelpListSeries, "series", false)
-	helpListServers := goleri.NewKeyword(GidHelpListServers, "servers", false)
+	helpSelect := goleri.NewKeyword(GidHelpSelect, "select", false)
 	helpListGroups := goleri.NewKeyword(GidHelpListGroups, "groups", false)
+	helpListPools := goleri.NewKeyword(GidHelpListPools, "pools", false)
 	helpListShards := goleri.NewKeyword(GidHelpListShards, "shards", false)
+	helpListUsers := goleri.NewKeyword(GidHelpListUsers, "users", false)
+	helpListServers := goleri.NewKeyword(GidHelpListServers, "servers", false)
+	helpListSeries := goleri.NewKeyword(GidHelpListSeries, "series", false)
 	helpList := goleri.NewSequence(
 		GidHelpList,
 		kList,
 		goleri.NewOptional(NoGid, goleri.NewChoice(
 			NoGid,
 			true,
-			helpListUsers,
-			helpListPools,
-			helpListSeries,
-			helpListServers,
 			helpListGroups,
+			helpListPools,
 			helpListShards,
+			helpListUsers,
+			helpListServers,
+			helpListSeries,
 		)),
 	)
-	helpAlterDatabase := goleri.NewKeyword(GidHelpAlterDatabase, "database", false)
-	helpAlterGroup := goleri.NewKeyword(GidHelpAlterGroup, "group", false)
-	helpAlterServers := goleri.NewKeyword(GidHelpAlterServers, "servers", false)
-	helpAlterServer := goleri.NewKeyword(GidHelpAlterServer, "server", false)
-	helpAlterUser := goleri.NewKeyword(GidHelpAlterUser, "user", false)
-	helpAlter := goleri.NewSequence(
-		GidHelpAlter,
-		kAlter,
-		goleri.NewOptional(NoGid, goleri.NewChoice(
-			NoGid,
-			true,
-			helpAlterDatabase,
-			helpAlterGroup,
-			helpAlterServers,
-			helpAlterServer,
-			helpAlterUser,
-		)),
-	)
-	helpCountSeries := goleri.NewKeyword(GidHelpCountSeries, "series", false)
-	helpCountServers := goleri.NewKeyword(GidHelpCountServers, "servers", false)
-	helpCountGroups := goleri.NewKeyword(GidHelpCountGroups, "groups", false)
-	helpCountShards := goleri.NewKeyword(GidHelpCountShards, "shards", false)
-	helpCountUsers := goleri.NewKeyword(GidHelpCountUsers, "users", false)
-	helpCountPools := goleri.NewKeyword(GidHelpCountPools, "pools", false)
-	helpCount := goleri.NewSequence(
-		GidHelpCount,
-		kCount,
-		goleri.NewOptional(NoGid, goleri.NewChoice(
-			NoGid,
-			true,
-			helpCountSeries,
-			helpCountServers,
-			helpCountGroups,
-			helpCountShards,
-			helpCountUsers,
-			helpCountPools,
-		)),
-	)
-	helpSelect := goleri.NewKeyword(GidHelpSelect, "select", false)
-	helpCreateGroup := goleri.NewKeyword(GidHelpCreateGroup, "group", false)
-	helpCreateUser := goleri.NewKeyword(GidHelpCreateUser, "user", false)
-	helpCreate := goleri.NewSequence(
-		GidHelpCreate,
-		kCreate,
-		goleri.NewOptional(NoGid, goleri.NewChoice(
-			NoGid,
-			true,
-			helpCreateGroup,
-			helpCreateUser,
-		)),
-	)
-	helpTimezones := goleri.NewKeyword(GidHelpTimezones, "timezones", false)
+	helpAccess := goleri.NewKeyword(GidHelpAccess, "access", false)
+	helpRevoke := goleri.NewKeyword(GidHelpRevoke, "revoke", false)
 	helpDropGroup := goleri.NewKeyword(GidHelpDropGroup, "group", false)
+	helpDropSeries := goleri.NewKeyword(GidHelpDropSeries, "series", false)
 	helpDropUser := goleri.NewKeyword(GidHelpDropUser, "user", false)
 	helpDropServer := goleri.NewKeyword(GidHelpDropServer, "server", false)
-	helpDropSeries := goleri.NewKeyword(GidHelpDropSeries, "series", false)
 	helpDropShards := goleri.NewKeyword(GidHelpDropShards, "shards", false)
 	helpDrop := goleri.NewSequence(
 		GidHelpDrop,
@@ -1645,33 +1641,88 @@ func SiriGrammar() *goleri.Grammar {
 			NoGid,
 			true,
 			helpDropGroup,
+			helpDropSeries,
 			helpDropUser,
 			helpDropServer,
-			helpDropSeries,
 			helpDropShards,
 		)),
 	)
+	helpCreateUser := goleri.NewKeyword(GidHelpCreateUser, "user", false)
+	helpCreateGroup := goleri.NewKeyword(GidHelpCreateGroup, "group", false)
+	helpCreate := goleri.NewSequence(
+		GidHelpCreate,
+		kCreate,
+		goleri.NewOptional(NoGid, goleri.NewChoice(
+			NoGid,
+			true,
+			helpCreateUser,
+			helpCreateGroup,
+		)),
+	)
+	helpCountGroups := goleri.NewKeyword(GidHelpCountGroups, "groups", false)
+	helpCountPools := goleri.NewKeyword(GidHelpCountPools, "pools", false)
+	helpCountShards := goleri.NewKeyword(GidHelpCountShards, "shards", false)
+	helpCountUsers := goleri.NewKeyword(GidHelpCountUsers, "users", false)
+	helpCountServers := goleri.NewKeyword(GidHelpCountServers, "servers", false)
+	helpCountSeries := goleri.NewKeyword(GidHelpCountSeries, "series", false)
+	helpCount := goleri.NewSequence(
+		GidHelpCount,
+		kCount,
+		goleri.NewOptional(NoGid, goleri.NewChoice(
+			NoGid,
+			true,
+			helpCountGroups,
+			helpCountPools,
+			helpCountShards,
+			helpCountUsers,
+			helpCountServers,
+			helpCountSeries,
+		)),
+	)
+	helpNoaccess := goleri.NewKeyword(GidHelpNoaccess, "noaccess", false)
+	helpAlterServer := goleri.NewKeyword(GidHelpAlterServer, "server", false)
+	helpAlterDatabase := goleri.NewKeyword(GidHelpAlterDatabase, "database", false)
+	helpAlterGroup := goleri.NewKeyword(GidHelpAlterGroup, "group", false)
+	helpAlterServers := goleri.NewKeyword(GidHelpAlterServers, "servers", false)
+	helpAlterUser := goleri.NewKeyword(GidHelpAlterUser, "user", false)
+	helpAlter := goleri.NewSequence(
+		GidHelpAlter,
+		kAlter,
+		goleri.NewOptional(NoGid, goleri.NewChoice(
+			NoGid,
+			true,
+			helpAlterServer,
+			helpAlterDatabase,
+			helpAlterGroup,
+			helpAlterServers,
+			helpAlterUser,
+		)),
+	)
+	helpShow := goleri.NewKeyword(GidHelpShow, "show", false)
+	helpTimezones := goleri.NewKeyword(GidHelpTimezones, "timezones", false)
 	helpTimeit := goleri.NewKeyword(GidHelpTimeit, "timeit", false)
+	helpGrant := goleri.NewKeyword(GidHelpGrant, "grant", false)
+	helpFunctions := goleri.NewKeyword(GidHelpFunctions, "functions", false)
 	help := goleri.NewSequence(
 		GidHelp,
 		kHelp,
 		goleri.NewOptional(NoGid, goleri.NewChoice(
 			NoGid,
 			true,
-			helpShow,
-			helpRevoke,
-			helpNoaccess,
-			helpFunctions,
-			helpGrant,
-			helpAccess,
-			helpList,
-			helpAlter,
-			helpCount,
 			helpSelect,
-			helpCreate,
-			helpTimezones,
+			helpList,
+			helpAccess,
+			helpRevoke,
 			helpDrop,
+			helpCreate,
+			helpCount,
+			helpNoaccess,
+			helpAlter,
+			helpShow,
+			helpTimezones,
 			helpTimeit,
+			helpGrant,
+			helpFunctions,
 		)),
 	)
 	START := goleri.NewSequence(

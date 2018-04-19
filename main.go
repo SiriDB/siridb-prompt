@@ -21,7 +21,7 @@ import (
 )
 
 // AppVersion exposes version information
-const AppVersion = "2.1.1"
+const AppVersion = "2.1.2"
 
 var (
 	xApp      = kingpin.New("siridb-admin", "Tool for communicating with a SiriDB database.")
@@ -43,12 +43,15 @@ func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
 }
 
 const coldef = termbox.ColorDefault
+const colsel = termbox.ColorBlue
+
 const cViewLog = 0
 const cViewOutput = 1
 
 var logger = newLogView()
 var isDrawwing = false
 var outv = newView()
+var mouseSelect = newMselect()
 var client *siridb.Client
 var currentView = cViewLog
 var outPrompt = newPrompt(">>> ", coldef|termbox.AttrBold, coldef)
@@ -459,6 +462,10 @@ mainloop:
 					outv.up()
 				case termbox.MouseWheelDown:
 					outv.down()
+				case termbox.MouseLeft:
+					println("Left: ", ev.MouseX, ev.MouseY)
+				case termbox.MouseRelease:
+					println("Release: ", ev.MouseX, ev.MouseY)
 				}
 			}
 		case termbox.EventError:

@@ -169,11 +169,8 @@ func (v *view) addPretty(w int) error {
 		}
 	}
 
-	if err := v.tryTimeit(m, w); err != nil {
-		return err
-	}
-
-	return nil
+	err := v.tryTimeit(m, w)
+	return err
 }
 
 func (v *view) tryTimeit(m map[string]interface{}, w int) error {
