@@ -391,7 +391,14 @@ func (v *view) append(q *query, w int) {
 	v.pos = -1
 }
 
-func (v *view) draw(w, h int) {
+func getColor(b bool) termbox.Attribute {
+	if b {
+		return colsel
+	}
+	return coldef
+}
+
+func (v *view) draw(w, h int, mouseSelect *mselect) {
 	y := 1
 	n := len(v.lines)
 	m := h - 2
@@ -416,7 +423,8 @@ func (v *view) draw(w, h int) {
 	for _, line := range v.lines[start:pos] {
 		runes := []rune(line)
 		for x, r := range runes {
-			termbox.SetCell(x, y, r, coldef, coldef)
+			c := getColor(mouseSelect.isInSelection(x, y))
+			termbox.SetCell(x, y, r, coldef, c)
 		}
 		y++
 	}

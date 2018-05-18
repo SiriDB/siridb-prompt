@@ -43,7 +43,7 @@ func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
 }
 
 const coldef = termbox.ColorDefault
-const colsel = termbox.ColorBlue
+const colsel = termbox.ColorMagenta
 
 const cViewLog = 0
 const cViewOutput = 1
@@ -113,7 +113,7 @@ func draw() {
 	if currentView == cViewLog {
 		logger.draw(w, h)
 	} else {
-		outv.draw(w, h)
+		outv.draw(w, h, mouseSelect)
 		outPrompt.draw(0, h-1, w, h, coldef, coldef)
 	}
 
@@ -463,9 +463,9 @@ mainloop:
 				case termbox.MouseWheelDown:
 					outv.down()
 				case termbox.MouseLeft:
-					println("Left: ", ev.MouseX, ev.MouseY)
+					mouseSelect.start(ev.MouseX, ev.MouseY)
 				case termbox.MouseRelease:
-					println("Release: ", ev.MouseX, ev.MouseY)
+					mouseSelect.end(ev.MouseX, ev.MouseY)
 				}
 			}
 		case termbox.EventError:
