@@ -28,6 +28,7 @@ func (m *mselect) clear() {
 }
 
 func (m *mselect) isInSelectoin(x int, y, int) bool {
+	if is
 	if m.isColumnMode {
 		return x >= m.beginX && x <= m.endX && y >= m.beginY && y <= m.endY
 	}
