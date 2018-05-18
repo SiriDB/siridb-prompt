@@ -6,7 +6,6 @@ import subprocess
 import base64
 
 
-
 goosarchs = [
     ('darwin', '386'),
     ('darwin', 'amd64'),
