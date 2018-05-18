@@ -113,9 +113,11 @@ func draw() {
 	if currentView == cViewLog {
 		logger.draw(w, h)
 	} else {
-		outv.draw(w, h, mouseSelect)
+		outv.draw(w, h)
 		outPrompt.draw(0, h-1, w, h, coldef, coldef)
 	}
+
+	termbox.drawAndCatch()
 
 	termbox.Flush()
 	isDrawwing = false
