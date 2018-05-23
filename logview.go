@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	termbox "github.com/nsf/termbox-go"
@@ -13,25 +15,53 @@ type logEntry struct {
 }
 
 type logView struct {
-	pos     int
-	entries []logEntry
-	ch      chan string
+	pos        int
+	entries    []logEntry
+	ch         chan string
+	useTermbox bool
+	stderr     *log.Logger
 }
 
 func newLogView() *logView {
 	l := logView{
-		pos:     -1,
-		entries: make([]logEntry, 0),
-		ch:      make(chan string),
+		pos:        -1,
+		entries:    make([]logEntry, 0),
+		ch:         make(chan string),
+		useTermbox: false,
+		stderr:     nil,
 	}
 	return &l
+}
+
+func (l *logView) setMode(s string) {
+	switch s {
+	case "CONSOLE":
+		l.useTermbox = false
+	case "TERMBOX":
+		l.useTermbox = true
+	default:
+		log.Fatal("Invalid mode: ", s)
+	}
 }
 
 func (l *logView) handle() {
 	for {
 		msg := <-l.ch
-		l.entries = append(l.entries, logEntry{time.Now(), msg})
-		draw()
+		if l.stderr != nil {
+			l.stderr.Println(msg)
+		} else {
+			l.entries = append(l.entries, logEntry{time.Now(), msg})
+			if l.useTermbox {
+				draw()
+			}
+		}
+	}
+}
+
+func (l *logView) toStdErr() {
+	l.stderr = log.New(os.Stderr, "", 0)
+	for _, entry := range l.entries {
+		l.stderr.Println(entry.msg)
 	}
 }
 

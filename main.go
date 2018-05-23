@@ -29,6 +29,7 @@ var (
 	xServers  = xApp.Flag("servers", "Server(s) to connect to. Multiple servers are allowed and should be separated with a comma. (syntax: --servers=host[:port]").Short('s').Required().String()
 	xUser     = xApp.Flag("user", "Database user.").Short('u').Required().String()
 	xPassword = xApp.Flag("password", "Password for the database user.").Short('p').String()
+	xRun      = xApp.Flag("run", "Run single command.").Short('r').String()
 	xHistory  = xApp.Flag("history", "Number of command in history. A value of 0 disables history.").Default("1000").Uint16()
 	xTimeout  = xApp.Flag("timeout", "Query timeout in seconds.").Default("60").Uint16()
 	xJSON     = xApp.Flag("json", "Raw JSON output.").Bool()
@@ -54,7 +55,7 @@ var isDrawwing = false
 var outv = newView()
 var mouseSelect = newMselect()
 var client *siridb.Client
-var currentView = cViewLog
+var currentView = cViewOutput
 var outPrompt = newPrompt(">>> ", coldef|termbox.AttrBold, coldef)
 var his *history
 var siriGrammar = SiriGrammar()
@@ -269,83 +270,86 @@ func getCompletions(p *prompt) []*completion {
 	return completions
 }
 
-func initConnect() {
+func initConnect() int {
 	var tp string
 
-	for !client.IsConnected() {
-		time.Sleep(time.Second)
-	}
 	res, err := client.Query("show time_precision", 10)
 	if err != nil {
 		logger.ch <- fmt.Sprintf("error reading time_precision: %s", err.Error())
-		return
+		return 1
 	}
 	v, ok := res.(map[string]interface{})
 	if !ok {
 		logger.ch <- "error reading time_precision: missing 'map' in data"
-		return
+		return 1
 	}
 
 	arr, ok := v["data"].([]interface{})
 	if !ok || len(arr) != 1 {
 		logger.ch <- "error reading time_precision: missing array 'data' or length 1 in map"
-		return
+		return 1
 	}
 
 	tp, ok = arr[0].(map[string]interface{})["value"].(string)
 
 	if !ok {
 		logger.ch <- "error reading time_precision: cannot find time_precision in data"
-		return
+		return 1
 	}
 
 	logger.ch <- fmt.Sprintf("finished reading time precision: '%s'", tp)
 	timePrecision = &tp
+	return 0
 }
 
 func main() {
+	exitCode := 0
+
+	defer func() {
+		os.Exit(exitCode)
+	}()
+
 	rand.Seed(time.Now().Unix())
+	var historyFn string
+	var err error
+	var servers []server
+	var historyFnP *string
+
+	_, err = xApp.Parse(os.Args[1:])
+	oneCommandOnly := len(*xRun) > 0
+	askPassword := len(*xPassword) == 0
+
+	logger.setMode("CONSOLE")
+
 	go logger.handle()
 
-	_, err := xApp.Parse(os.Args[1:])
 	if *xVersion {
 		fmt.Printf("Version: %s\n", AppVersion)
-		os.Exit(0)
+		goto finished
 	}
 
 	if err != nil {
 		fmt.Printf("%s\n", err)
-		os.Exit(1)
+		goto stoperr
 	}
 
 	if *xJSON {
 		outv.setModeJSON()
 	}
 
-	err = termbox.Init()
-	if err != nil {
-		panic(err)
-	}
-
-	defer termbox.Close()
-
-	if *xMouse {
-		termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
-	} else {
-		termbox.SetInputMode(termbox.InputEsc)
-	}
-
-	termbox.SetOutputMode(termbox.Output256)
-
-	var servers []server
 	servers, err = getServers(*xServers)
 	if err != nil {
-		termbox.Close()
 		fmt.Printf("error reading servers: %s\n", err.Error())
-		os.Exit(1)
+		goto stoperr
 	}
 
-	if len(*xPassword) == 0 {
+	if askPassword {
+		err = termbox.Init()
+		if err != nil {
+			panic(err)
+		}
+		termbox.SetInputMode(termbox.InputEsc)
+		termbox.SetOutputMode(termbox.Output256)
 		pp := newPrompt("Password: ", coldef|termbox.AttrBold, coldef)
 		pp.hideText = true
 
@@ -357,7 +361,7 @@ func main() {
 				switch ev.Key {
 				case termbox.KeyCtrlC, termbox.KeyCtrlQ:
 					termbox.Close()
-					os.Exit(1)
+					goto stoperr
 				case termbox.KeyEnter:
 					*xPassword = string(pp.text)
 					break passloop
@@ -369,20 +373,22 @@ func main() {
 			}
 
 		}
+		termbox.Close()
 	}
 
-	outPrompt.completer = getCompletions
+	if !oneCommandOnly {
+		outPrompt.completer = getCompletions
 
-	var historyFnP *string
-	historyFn, err := homedir.Dir()
-	if err == nil {
-		historyFn = path.Join(historyFn, ".siridb-prompt", fmt.Sprintf("%s@%s.history.1", *xUser, *xDbname))
-		historyFnP = &historyFn
+		historyFn, err = homedir.Dir()
+		if err == nil {
+			historyFn = path.Join(historyFn, ".siridb-prompt", fmt.Sprintf("%s@%s.history.1", *xUser, *xDbname))
+			historyFnP = &historyFn
+		}
+
+		his = newHistory(int(*xHistory), historyFnP)
+		his.load()
+		defer his.save()
 	}
-
-	his = newHistory(int(*xHistory), historyFnP)
-	his.load()
-	defer his.save()
 
 	client = siridb.NewClient(
 		*xUser,                      // user
@@ -392,18 +398,54 @@ func main() {
 		logger.ch,                   // optional log channel
 	)
 
-	logger.ch <- fmt.Sprintf("Connecting to database %s...", *xDbname)
+	logger.ch <- fmt.Sprintf("connecting to database %s...", *xDbname)
 
 	client.Connect()
-	go initConnect()
-	if client.IsAvailable() {
-		currentView = cViewOutput
-	}
 
 	defer client.Close()
 
+	if !client.IsAvailable() || initConnect() != 0 {
+		goto stoperr
+	}
+
+	if oneCommandOnly {
+		q := newQuery(*xRun)
+		q.parse(*xTimeout)
+		outv.append(q, 99999)
+
+		if q.err == nil {
+			if len(outv.lines) > 1 {
+				for _, line := range outv.lines[1:] {
+					fmt.Println(line)
+				}
+			}
+			goto finished
+		}
+		goto stoperr
+	}
+
+	err = termbox.Init()
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		termbox.Close()
+		logger.setMode("CONSOLE")
+	}()
+
+	if *xMouse {
+		termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
+	} else {
+		termbox.SetInputMode(termbox.InputEsc)
+	}
+
+	termbox.SetOutputMode(termbox.Output256)
+	logger.setMode("TERMBOX")
+
 mainloop:
 	for {
+		draw()
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventKey:
 			if currentView == cViewLog {
@@ -499,6 +541,12 @@ mainloop:
 		case termbox.EventError:
 			panic(ev.Err)
 		}
-		draw()
 	}
+	goto finished
+
+stoperr:
+	logger.toStdErr()
+	exitCode = 1
+
+finished:
 }
