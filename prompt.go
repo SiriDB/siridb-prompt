@@ -23,6 +23,7 @@ type box struct {
 	completions []*completion
 	selected    int
 	iStart      int
+	hidden      bool
 }
 
 type prompt struct {
@@ -50,6 +51,7 @@ func newPrompt(prefix string, fg, bg termbox.Attribute) *prompt {
 		popup: box{
 			completions: nil,
 			selected:    -1,
+			hidden:      false,
 		},
 	}
 	return &p
@@ -59,7 +61,7 @@ func (b *box) draw(x, y, w, h int) {
 	var fg, bg termbox.Attribute
 
 	n := len(b.completions)
-	if n == 0 {
+	if n == 0 || b.hidden == true {
 		return
 	}
 
@@ -133,8 +135,17 @@ func (p *prompt) insertSelected() {
 }
 
 func (p *prompt) setText(s string) {
+	p.showPopup()
 	p.text = []rune(s)
 	p.pos = len(p.text)
+}
+
+func (p *prompt) hidePopup() {
+	p.popup.hidden = true
+}
+
+func (p *prompt) showPopup() {
+	p.popup.hidden = false
 }
 
 func (p *prompt) draw(x, y, w, h int, fg, bg termbox.Attribute) {
@@ -150,7 +161,9 @@ func (p *prompt) draw(x, y, w, h int, fg, bg termbox.Attribute) {
 		p.offset = p.pos
 	}
 	n = min(p.offset+(w-x), n)
-
+	if p.offset < 0 {
+		p.offset = 0
+	}
 	for i, r := range p.text[p.offset:n] {
 		if p.hideText {
 			r = '*'
@@ -162,6 +175,7 @@ func (p *prompt) draw(x, y, w, h int, fg, bg termbox.Attribute) {
 }
 
 func (p *prompt) insertRune(r rune) {
+	p.showPopup()
 	p.text = append(p.text, '0')
 	copy(p.text[p.pos+1:], p.text[p.pos:])
 	p.text[p.pos] = r

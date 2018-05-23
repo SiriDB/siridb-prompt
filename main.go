@@ -32,6 +32,7 @@ var (
 	xHistory  = xApp.Flag("history", "Number of command in history. A value of 0 disables history.").Default("1000").Uint16()
 	xTimeout  = xApp.Flag("timeout", "Query timeout in seconds.").Default("60").Uint16()
 	xJSON     = xApp.Flag("json", "Raw JSON output.").Bool()
+	xMouse    = xApp.Flag("mouse", "Enable mouse support.").Bool()
 	xVersion  = xApp.Flag("version", "Print version information and exit.").Short('v').Bool()
 )
 
@@ -114,10 +115,9 @@ func draw() {
 		logger.draw(w, h)
 	} else {
 		outv.draw(w, h)
+		mouseSelect.draw(w, h)
 		outPrompt.draw(0, h-1, w, h, coldef, coldef)
 	}
-
-	termbox.drawAndCatch()
 
 	termbox.Flush()
 	isDrawwing = false
@@ -158,6 +158,8 @@ func toClipboard(to string) {
 			s, err = outv.query.json()
 		case "CSV":
 			s, err = outv.query.csv()
+		case "SELECTION":
+			s = string(mouseSelect.getSelection())
 		default:
 			panic(fmt.Errorf("unexpected format: %s", to))
 		}
@@ -326,7 +328,13 @@ func main() {
 	}
 
 	defer termbox.Close()
-	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
+
+	if *xMouse {
+		termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
+	} else {
+		termbox.SetInputMode(termbox.InputEsc)
+	}
+
 	termbox.SetOutputMode(termbox.Output256)
 
 	var servers []server
@@ -418,19 +426,34 @@ mainloop:
 				case termbox.KeyCtrlQ:
 					break mainloop
 				case termbox.KeyCtrlL:
+					mouseSelect.clear()
 					currentView = cViewLog
 				case termbox.KeyCtrlJ:
 					toClipboard("JSON")
 				case termbox.KeyCtrlC:
-					toClipboard("CSV")
+					if mouseSelect.hasSelection {
+						toClipboard("SELECTION")
+					} else {
+						toClipboard("CSV")
+					}
+				case termbox.KeyCtrlV:
+					if mouseSelect.hasSelection {
+						outPrompt.hidePopup()
+						for _, r := range mouseSelect.getSelection() {
+							outPrompt.insertRune(r)
+						}
+					}
 				case termbox.KeyEnter:
+					mouseSelect.clear()
 					outPrompt.clearCompletions()
 					if sendCommand() == 1 {
 						break mainloop
 					}
 				case termbox.KeyPgdn:
+					mouseSelect.clear()
 					outv.pageDown()
 				case termbox.KeyPgup:
+					mouseSelect.clear()
 					outv.pageUp()
 				case termbox.KeyArrowUp:
 					if outPrompt.hasCompletions() {
@@ -461,10 +484,13 @@ mainloop:
 			} else if currentView == cViewOutput {
 				switch ev.Key {
 				case termbox.MouseWheelUp:
+					mouseSelect.clear()
 					outv.up()
 				case termbox.MouseWheelDown:
+					mouseSelect.clear()
 					outv.down()
 				case termbox.MouseLeft:
+					outPrompt.hidePopup()
 					mouseSelect.start(ev.MouseX, ev.MouseY)
 				case termbox.MouseRelease:
 					mouseSelect.end(ev.MouseX, ev.MouseY)
