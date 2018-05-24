@@ -18,7 +18,11 @@ func getFormatter(s string) func(i interface{}) string {
 		return fmtSizeMb
 	case "uptime":
 		return fmtDuration
+	case "idle_time":
+		return fmtDuration
 	case "drop_threshold":
+		return fmtPercentage
+	case "idle_percentage":
 		return fmtPercentage
 	case "time_precision":
 		return fmtTimePrecision
@@ -59,6 +63,10 @@ func fmtPercentage(i interface{}) string {
 	p, ok := i.(float64)
 	if ok {
 		return fmt.Sprintf("%v (%d%%)", i, int(p*100))
+	}
+	o, ok := i.(int)
+	if ok {
+		return fmt.Sprintf("%d%%", o)
 	}
 	return fmt.Sprint(i)
 }
