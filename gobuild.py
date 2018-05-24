@@ -38,6 +38,10 @@ goosarchs = [
     ('windows', 'amd64'),
 ]
 
+goosarchs = [
+
+    ('windows', 'amd64'),
+]
 
 GOFILE = 'main.go'
 TARGET = 'siridb-prompt'

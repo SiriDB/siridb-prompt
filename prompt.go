@@ -155,7 +155,7 @@ func (p *prompt) draw(x, y, w, h int, fg, bg termbox.Attribute) {
 	}
 
 	n := len(p.text)
-	if p.offset+p.pos+x > w {
+	if p.offset+p.pos+x >= w {
 		p.offset = min(x+n-w+1, p.pos)
 	} else if p.offset > p.pos {
 		p.offset = p.pos
