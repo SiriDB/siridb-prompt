@@ -21,7 +21,7 @@ import (
 )
 
 // AppVersion exposes version information
-const AppVersion = "2.1.2"
+const AppVersion = "2.1.3"
 
 var (
 	xApp      = kingpin.New("siridb-admin", "Tool for communicating with a SiriDB database.")
