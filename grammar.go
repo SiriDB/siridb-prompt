@@ -4,7 +4,7 @@ package main
 // should be used with the goleri module.
 //
 // Source class: SiriGrammar
-// Created at: 2018-07-09 16:46:46
+// Created at: 2018-10-29 10:52:57
 
 import (
 	"regexp"
@@ -224,6 +224,7 @@ const (
 	GidKSum                 = iota
 	GidKSymmetricDifference = iota
 	GidKSyncProgress        = iota
+	GidKTeePipeName         = iota
 	GidKTimePrecision       = iota
 	GidKTimeit              = iota
 	GidKTimezone            = iota
@@ -289,6 +290,7 @@ const (
 	GidSetPassword          = iota
 	GidSetPort              = iota
 	GidSetSelectPointsLimit = iota
+	GidSetTeePipeName       = iota
 	GidSetTimezone          = iota
 	GidShardColumns         = iota
 	GidShowStmt             = iota
@@ -446,6 +448,7 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewKeyword(NoGid, "symmetric_difference", false),
 	)
 	kSyncProgress := goleri.NewKeyword(GidKSyncProgress, "sync_progress", false)
+	kTeePipeName := goleri.NewKeyword(GidKTeePipeName, "tee_pipe_name", false)
 	kTimeit := goleri.NewKeyword(GidKTimeit, "timeit", false)
 	kTimezone := goleri.NewKeyword(GidKTimezone, "timezone", false)
 	kTimePrecision := goleri.NewKeyword(GidKTimePrecision, "time_precision", false)
@@ -601,6 +604,7 @@ func SiriGrammar() *goleri.Grammar {
 		kReindexProgress,
 		kSelectedPoints,
 		kSyncProgress,
+		kTeePipeName,
 		kUptime,
 	), goleri.NewToken(NoGid, ","), 1, 0, false)
 	groupColumns := goleri.NewList(GidGroupColumns, goleri.NewChoice(
@@ -810,6 +814,7 @@ func SiriGrammar() *goleri.Grammar {
 					kStatus,
 					kReindexProgress,
 					kSyncProgress,
+					kTeePipeName,
 				),
 				strOperator,
 				string,
@@ -1220,6 +1225,17 @@ func SiriGrammar() *goleri.Grammar {
 		kAddress,
 		string,
 	)
+	setTeePipeName := goleri.NewSequence(
+		GidSetTeePipeName,
+		kSet,
+		kTeePipeName,
+		goleri.NewChoice(
+			NoGid,
+			false,
+			kFalse,
+			string,
+		),
+	)
 	setBackupMode := goleri.NewSequence(
 		GidSetBackupMode,
 		kSet,
@@ -1318,6 +1334,7 @@ func SiriGrammar() *goleri.Grammar {
 			false,
 			setLogLevel,
 			setBackupMode,
+			setTeePipeName,
 			setAddress,
 			setPort,
 		),
@@ -1326,7 +1343,12 @@ func SiriGrammar() *goleri.Grammar {
 		GidAlterServers,
 		kServers,
 		goleri.NewOptional(NoGid, whereServer),
-		setLogLevel,
+		goleri.NewChoice(
+			NoGid,
+			false,
+			setLogLevel,
+			setTeePipeName,
+		),
 	)
 	alterUser := goleri.NewSequence(
 		GidAlterUser,
@@ -1626,6 +1648,7 @@ func SiriGrammar() *goleri.Grammar {
 			kStartupTime,
 			kStatus,
 			kSyncProgress,
+			kTeePipeName,
 			kTimePrecision,
 			kTimezone,
 			kUptime,
