@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SiriDB/go-siridb-connector"
 	"github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/transceptor-technology/go-siridb-connector"
 	"github.com/transceptor-technology/goleri"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
