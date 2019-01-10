@@ -81,9 +81,9 @@ func draw() {
 	var fg termbox.Attribute
 
 	if currentView == cViewLog {
-		s = " Log (ESC / CTRL+L close log, CTRL+Q quit)"
+		s = " Log (ESC / CTRL+L close log, CTRL+Q/D quit)"
 	} else {
-		s = " Output (CTRL+L view log, CTRL+J / CTRL+C copy to clipboard, CTRL+Q quit)"
+		s = " Output (CTRL+L view log, CTRL+J / CTRL+C copy to clipboard, CTRL+Q/D quit)"
 	}
 	for _, c := range s {
 		termbox.SetCell(x, 0, c, termbox.ColorBlack, termbox.ColorWhite)
@@ -451,6 +451,7 @@ mainloop:
 			if currentView == cViewLog {
 				switch ev.Key {
 				case termbox.KeyCtrlQ:
+				case termbox.KeyCtrlD:
 					break mainloop
 				case termbox.KeyCtrlL, termbox.KeyEsc:
 					currentView = cViewOutput
@@ -466,6 +467,7 @@ mainloop:
 			} else if currentView == cViewOutput {
 				switch ev.Key {
 				case termbox.KeyCtrlQ:
+				case termbox.KeyCtrlD:
 					break mainloop
 				case termbox.KeyCtrlL:
 					mouseSelect.clear()

@@ -4,7 +4,7 @@ package main
 // should be used with the goleri module.
 //
 // Source class: SiriGrammar
-// Created at: 2018-10-29 10:52:57
+// Created at: 2019-01-10 13:20:05
 
 import (
 	"regexp"
@@ -276,8 +276,9 @@ const (
 	GidSeriesColumns        = iota
 	GidSeriesMatch          = iota
 	GidSeriesName           = iota
+	GidSeriesParentheses    = iota
 	GidSeriesRe             = iota
-	GidSeriesSep            = iota
+	GidSeriesSetopr         = iota
 	GidServerColumns        = iota
 	GidSetAddress           = iota
 	GidSetBackupMode        = iota
@@ -958,13 +959,19 @@ func SiriGrammar() *goleri.Grammar {
 			),
 		),
 	)
-	seriesSep := goleri.NewChoice(
-		GidSeriesSep,
+	seriesSetopr := goleri.NewChoice(
+		GidSeriesSetopr,
 		false,
 		kUnion,
 		cDifference,
 		kIntersection,
 		kSymmetricDifference,
+	)
+	seriesParentheses := goleri.NewSequence(
+		GidSeriesParentheses,
+		goleri.NewToken(NoGid, "("),
+		goleri.THIS,
+		goleri.NewToken(NoGid, ")"),
 	)
 	seriesAll := goleri.NewChoice(
 		GidSeriesAll,
@@ -982,14 +989,24 @@ func SiriGrammar() *goleri.Grammar {
 		string,
 	)
 	groupMatch := goleri.NewRepeat(GidGroupMatch, rGraveStr, 1, 1)
-	seriesMatch := goleri.NewList(GidSeriesMatch, goleri.NewChoice(
-		NoGid,
-		false,
-		seriesAll,
-		seriesName,
-		groupMatch,
-		seriesRe,
-	), seriesSep, 1, 0, false)
+	seriesMatch := goleri.NewPrio(
+		GidSeriesMatch,
+		goleri.NewChoice(
+			NoGid,
+			false,
+			seriesAll,
+			seriesName,
+			groupMatch,
+			seriesRe,
+		),
+		seriesParentheses,
+		goleri.NewSequence(
+			NoGid,
+			goleri.THIS,
+			seriesSetopr,
+			goleri.THIS,
+		),
+	)
 	limitExpr := goleri.NewSequence(
 		GidLimitExpr,
 		kLimit,
