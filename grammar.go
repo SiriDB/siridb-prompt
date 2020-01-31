@@ -4,7 +4,7 @@ package main
 // should be used with the goleri module.
 //
 // Source class: SiriGrammar
-// Created at: 2019-01-10 13:20:05
+// Created at: 2020-01-23 14:08:47
 
 import (
 	"regexp"
@@ -145,6 +145,8 @@ const (
 	GidKDurationNum         = iota
 	GidKEnd                 = iota
 	GidKError               = iota
+	GidKExpirationLog       = iota
+	GidKExpirationNum       = iota
 	GidKExpression          = iota
 	GidKFalse               = iota
 	GidKFifoFiles           = iota
@@ -283,6 +285,8 @@ const (
 	GidSetAddress           = iota
 	GidSetBackupMode        = iota
 	GidSetDropThreshold     = iota
+	GidSetExpirationLog     = iota
+	GidSetExpirationNum     = iota
 	GidSetExpression        = iota
 	GidSetIgnoreThreshold   = iota
 	GidSetListLimit         = iota
@@ -395,14 +399,14 @@ func SiriGrammar() *goleri.Grammar {
 	kMaxOpenFiles := goleri.NewKeyword(GidKMaxOpenFiles, "max_open_files", false)
 	kMean := goleri.NewKeyword(GidKMean, "mean", false)
 	kMedian := goleri.NewKeyword(GidKMedian, "median", false)
-	kMedianLow := goleri.NewKeyword(GidKMedianLow, "median_low", false)
 	kMedianHigh := goleri.NewKeyword(GidKMedianHigh, "median_high", false)
+	kMedianLow := goleri.NewKeyword(GidKMedianLow, "median_low", false)
 	kMemUsage := goleri.NewKeyword(GidKMemUsage, "mem_usage", false)
 	kMerge := goleri.NewKeyword(GidKMerge, "merge", false)
 	kMin := goleri.NewKeyword(GidKMin, "min", false)
 	kModify := goleri.NewKeyword(GidKModify, "modify", false)
-	kNan := goleri.NewKeyword(GidKNan, "nan", false)
 	kName := goleri.NewKeyword(GidKName, "name", false)
+	kNan := goleri.NewKeyword(GidKNan, "nan", false)
 	kNinf := goleri.NewSequence(
 		GidKNinf,
 		goleri.NewToken(NoGid, "-"),
@@ -431,9 +435,11 @@ func SiriGrammar() *goleri.Grammar {
 	kServer := goleri.NewKeyword(GidKServer, "server", false)
 	kServers := goleri.NewKeyword(GidKServers, "servers", false)
 	kSet := goleri.NewKeyword(GidKSet, "set", false)
-	kSid := goleri.NewKeyword(GidKSid, "sid", false)
+	kExpirationLog := goleri.NewKeyword(GidKExpirationLog, "expiration_log", false)
+	kExpirationNum := goleri.NewKeyword(GidKExpirationNum, "expiration_num", false)
 	kShards := goleri.NewKeyword(GidKShards, "shards", false)
 	kShow := goleri.NewKeyword(GidKShow, "show", false)
+	kSid := goleri.NewKeyword(GidKSid, "sid", false)
 	kSize := goleri.NewKeyword(GidKSize, "size", false)
 	kStart := goleri.NewKeyword(GidKStart, "start", false)
 	kStartupTime := goleri.NewKeyword(GidKStartupTime, "startup_time", false)
@@ -991,6 +997,14 @@ func SiriGrammar() *goleri.Grammar {
 	groupMatch := goleri.NewRepeat(GidGroupMatch, rGraveStr, 1, 1)
 	seriesMatch := goleri.NewPrio(
 		GidSeriesMatch,
+		goleri.NewList(NoGid, goleri.NewChoice(
+			NoGid,
+			false,
+			seriesAll,
+			seriesName,
+			groupMatch,
+			seriesRe,
+		), seriesSetopr, 1, 0, false),
 		goleri.NewChoice(
 			NoGid,
 			false,
@@ -1319,6 +1333,20 @@ func SiriGrammar() *goleri.Grammar {
 		kTimezone,
 		string,
 	)
+	setExpirationNum := goleri.NewSequence(
+		GidSetExpirationNum,
+		kSet,
+		kExpirationNum,
+		timeExpr,
+		goleri.NewOptional(NoGid, setIgnoreThreshold),
+	)
+	setExpirationLog := goleri.NewSequence(
+		GidSetExpirationLog,
+		kSet,
+		kExpirationLog,
+		timeExpr,
+		goleri.NewOptional(NoGid, setIgnoreThreshold),
+	)
 	alterDatabase := goleri.NewSequence(
 		GidAlterDatabase,
 		kDatabase,
@@ -1329,6 +1357,8 @@ func SiriGrammar() *goleri.Grammar {
 			setListLimit,
 			setSelectPointsLimit,
 			setTimezone,
+			setExpirationNum,
+			setExpirationLog,
 		),
 	)
 	alterGroup := goleri.NewSequence(
@@ -1647,6 +1677,8 @@ func SiriGrammar() *goleri.Grammar {
 			kDurationLog,
 			kDurationNum,
 			kFifoFiles,
+			kExpirationLog,
+			kExpirationNum,
 			kIdlePercentage,
 			kIdleTime,
 			kIpSupport,

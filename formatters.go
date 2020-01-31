@@ -28,6 +28,8 @@ func getFormatter(s string) func(i interface{}) string {
 		return fmtTimePrecision
 	case "time":
 		return fmtTimeit
+	case "expiration_num", "expiration_log":
+		return fmtExpiration
 	default:
 		return func(i interface{}) string { return fmt.Sprint(i) }
 	}
@@ -157,6 +159,32 @@ func fmtLargeNum(i interface{}) string {
 		s = res
 	}
 	return string(s)
+}
+
+func fmtExpiration(i interface{}) string {
+	if i == nil {
+		return "never"
+	}
+	seconds, ok := i.(int)
+	if ok {
+		if seconds == 1 {
+			return "1 second"
+		}
+		if seconds <= 60*2 {
+			return fmt.Sprintf("%d seconds", seconds)
+		}
+		if seconds <= 3600*2 {
+			return fmt.Sprintf("%d minutes", seconds/60)
+		}
+		if seconds <= 86400*2 {
+			return fmt.Sprintf("%d hours", seconds/3600)
+		}
+		if seconds <= 86400*28 {
+			return fmt.Sprintf("%d days", seconds/86400)
+		}
+		return fmt.Sprintf("%d weeks", seconds/(86400*7))
+	}
+	return fmt.Sprint(i)
 }
 
 func fmtDuration(i interface{}) string {
