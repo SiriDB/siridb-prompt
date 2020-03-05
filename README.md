@@ -10,7 +10,7 @@ SiriDB Prompt provides a terminal client for communicating with [SiriDB](https:/
   * [Installation](#installation)
     * [Pre-compiled](#pre-compiled)
     * [Compile from source](#compile-from-source)
-  * [Connect via SSH](@connect-via-ssh)
+  * [Connect via SSH](#connect-via-ssh)
 ---------------------------------------
 
 ## Installation
