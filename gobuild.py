@@ -55,7 +55,7 @@ def get_version(path):
 
 
 def build_all():
-    path = os.path.dirname(__file__)
+    path = os.path.dirname(os.path.abspath(__file__))
     version = get_version(path)
     outpath = os.path.join(path, 'bin', version)
     if not os.path.exists(outpath):
@@ -80,7 +80,7 @@ def build_all():
 
 
 def build(output=''):
-    path = os.path.dirname(__file__)
+    path = os.path.dirname(os.path.abspath(__file__))
     version = get_version(path)
     outfile = output if output else os.path.join(path, '{}_{}.{}'.format(
         TARGET, version, 'exe' if sys.platform.startswith('win') else 'bin'))

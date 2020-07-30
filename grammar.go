@@ -4,7 +4,7 @@ package main
 // should be used with the goleri module.
 //
 // Source class: SiriGrammar
-// Created at: 2020-01-23 14:08:47
+// Created at: 2020-07-30 10:55:51
 
 import (
 	"regexp"
@@ -21,6 +21,7 @@ const (
 	GidAggregateFunctions   = iota
 	GidAlterDatabase        = iota
 	GidAlterGroup           = iota
+	GidAlterSeries          = iota
 	GidAlterServer          = iota
 	GidAlterServers         = iota
 	GidAlterStmt            = iota
@@ -41,6 +42,7 @@ const (
 	GidCountShards          = iota
 	GidCountShardsSize      = iota
 	GidCountStmt            = iota
+	GidCountTags            = iota
 	GidCountUsers           = iota
 	GidCreateGroup          = iota
 	GidCreateStmt           = iota
@@ -50,6 +52,7 @@ const (
 	GidDropServer           = iota
 	GidDropShards           = iota
 	GidDropStmt             = iota
+	GidDropTag              = iota
 	GidDropUser             = iota
 	GidFAll                 = iota
 	GidFCount               = iota
@@ -73,8 +76,8 @@ const (
 	GidGrantStmt            = iota
 	GidGrantUser            = iota
 	GidGroupColumns         = iota
-	GidGroupMatch           = iota
 	GidGroupName            = iota
+	GidGroupTagMatch        = iota
 	GidHelpAccess           = iota
 	GidHelpAlter            = iota
 	GidHelpAlterDatabase    = iota
@@ -226,6 +229,8 @@ const (
 	GidKSum                 = iota
 	GidKSymmetricDifference = iota
 	GidKSyncProgress        = iota
+	GidKTag                 = iota
+	GidKTags                = iota
 	GidKTeePipeName         = iota
 	GidKTimePrecision       = iota
 	GidKTimeit              = iota
@@ -234,6 +239,7 @@ const (
 	GidKTrue                = iota
 	GidKType                = iota
 	GidKUnion               = iota
+	GidKUntag               = iota
 	GidKUptime              = iota
 	GidKUser                = iota
 	GidKUsers               = iota
@@ -252,6 +258,7 @@ const (
 	GidListServers          = iota
 	GidListShards           = iota
 	GidListStmt             = iota
+	GidListTags             = iota
 	GidListUsers            = iota
 	GidLogKeywords          = iota
 	GidMergeAs              = iota
@@ -302,8 +309,12 @@ const (
 	GidStrOperator          = iota
 	GidString               = iota
 	GidSuffixExpr           = iota
+	GidTagColumns           = iota
+	GidTagName              = iota
+	GidTagSeries            = iota
 	GidTimeExpr             = iota
 	GidTimeitStmt           = iota
+	GidUntagSeries          = iota
 	GidUserColumns          = iota
 	GidUuid                 = iota
 	GidWhereGroup           = iota
@@ -311,6 +322,7 @@ const (
 	GidWhereSeries          = iota
 	GidWhereServer          = iota
 	GidWhereShard           = iota
+	GidWhereTag             = iota
 	GidWhereUser            = iota
 )
 
@@ -455,6 +467,8 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewKeyword(NoGid, "symmetric_difference", false),
 	)
 	kSyncProgress := goleri.NewKeyword(GidKSyncProgress, "sync_progress", false)
+	kTag := goleri.NewKeyword(GidKTag, "tag", false)
+	kTags := goleri.NewKeyword(GidKTags, "tags", false)
 	kTeePipeName := goleri.NewKeyword(GidKTeePipeName, "tee_pipe_name", false)
 	kTimeit := goleri.NewKeyword(GidKTimeit, "timeit", false)
 	kTimezone := goleri.NewKeyword(GidKTimezone, "timezone", false)
@@ -468,6 +482,7 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewTokens(NoGid, ", |"),
 		goleri.NewKeyword(NoGid, "union", false),
 	)
+	kUntag := goleri.NewKeyword(GidKUntag, "untag", false)
 	kUptime := goleri.NewKeyword(GidKUptime, "uptime", false)
 	kUser := goleri.NewKeyword(GidKUser, "user", false)
 	kUsers := goleri.NewKeyword(GidKUsers, "users", false)
@@ -627,6 +642,12 @@ func SiriGrammar() *goleri.Grammar {
 		kName,
 		kAccess,
 	), goleri.NewToken(NoGid, ","), 1, 0, false)
+	tagColumns := goleri.NewList(GidTagColumns, goleri.NewChoice(
+		NoGid,
+		false,
+		kName,
+		kSeries,
+	), goleri.NewToken(NoGid, ","), 1, 0, false)
 	poolProps := goleri.NewChoice(
 		GidPoolProps,
 		false,
@@ -659,6 +680,43 @@ func SiriGrammar() *goleri.Grammar {
 				),
 				strOperator,
 				string,
+			),
+			goleri.NewSequence(
+				NoGid,
+				goleri.NewToken(NoGid, "("),
+				goleri.THIS,
+				goleri.NewToken(NoGid, ")"),
+			),
+			goleri.NewSequence(
+				NoGid,
+				goleri.THIS,
+				kAnd,
+				goleri.THIS,
+			),
+			goleri.NewSequence(
+				NoGid,
+				goleri.THIS,
+				kOr,
+				goleri.THIS,
+			),
+		),
+	)
+	whereTag := goleri.NewSequence(
+		GidWhereTag,
+		kWhere,
+		goleri.NewPrio(
+			NoGid,
+			goleri.NewSequence(
+				NoGid,
+				kName,
+				strOperator,
+				string,
+			),
+			goleri.NewSequence(
+				NoGid,
+				kSeries,
+				intOperator,
+				intExpr,
 			),
 			goleri.NewSequence(
 				NoGid,
@@ -987,6 +1045,7 @@ func SiriGrammar() *goleri.Grammar {
 	)
 	seriesName := goleri.NewRepeat(GidSeriesName, string, 1, 1)
 	groupName := goleri.NewRepeat(GidGroupName, rGraveStr, 1, 1)
+	tagName := goleri.NewRepeat(GidTagName, rGraveStr, 1, 1)
 	seriesRe := goleri.NewRepeat(GidSeriesRe, rRegex, 1, 1)
 	uuid := goleri.NewChoice(
 		GidUuid,
@@ -994,7 +1053,7 @@ func SiriGrammar() *goleri.Grammar {
 		rUuidStr,
 		string,
 	)
-	groupMatch := goleri.NewRepeat(GidGroupMatch, rGraveStr, 1, 1)
+	groupTagMatch := goleri.NewRepeat(GidGroupTagMatch, rGraveStr, 1, 1)
 	seriesMatch := goleri.NewPrio(
 		GidSeriesMatch,
 		goleri.NewList(NoGid, goleri.NewChoice(
@@ -1002,7 +1061,7 @@ func SiriGrammar() *goleri.Grammar {
 			false,
 			seriesAll,
 			seriesName,
-			groupMatch,
+			groupTagMatch,
 			seriesRe,
 		), seriesSetopr, 1, 0, false),
 		goleri.NewChoice(
@@ -1010,7 +1069,7 @@ func SiriGrammar() *goleri.Grammar {
 			false,
 			seriesAll,
 			seriesName,
-			groupMatch,
+			groupTagMatch,
 			seriesRe,
 		),
 		seriesParentheses,
@@ -1333,6 +1392,16 @@ func SiriGrammar() *goleri.Grammar {
 		kTimezone,
 		string,
 	)
+	tagSeries := goleri.NewSequence(
+		GidTagSeries,
+		kTag,
+		tagName,
+	)
+	untagSeries := goleri.NewSequence(
+		GidUntagSeries,
+		kUntag,
+		tagName,
+	)
 	setExpirationNum := goleri.NewSequence(
 		GidSetExpirationNum,
 		kSet,
@@ -1408,10 +1477,27 @@ func SiriGrammar() *goleri.Grammar {
 			setName,
 		),
 	)
+	alterSeries := goleri.NewSequence(
+		GidAlterSeries,
+		kSeries,
+		seriesMatch,
+		goleri.NewOptional(NoGid, whereSeries),
+		goleri.NewChoice(
+			NoGid,
+			false,
+			tagSeries,
+			untagSeries,
+		),
+	)
 	countGroups := goleri.NewSequence(
 		GidCountGroups,
 		kGroups,
 		goleri.NewOptional(NoGid, whereGroup),
+	)
+	countTags := goleri.NewSequence(
+		GidCountTags,
+		kTags,
+		goleri.NewOptional(NoGid, whereTag),
 	)
 	countPools := goleri.NewSequence(
 		GidCountPools,
@@ -1482,6 +1568,11 @@ func SiriGrammar() *goleri.Grammar {
 		kGroup,
 		groupName,
 	)
+	dropTag := goleri.NewSequence(
+		GidDropTag,
+		kTag,
+		tagName,
+	)
 	dropSeries := goleri.NewSequence(
 		GidDropSeries,
 		kSeries,
@@ -1516,6 +1607,12 @@ func SiriGrammar() *goleri.Grammar {
 		kGroups,
 		goleri.NewOptional(NoGid, groupColumns),
 		goleri.NewOptional(NoGid, whereGroup),
+	)
+	listTags := goleri.NewSequence(
+		GidListTags,
+		kTags,
+		goleri.NewOptional(NoGid, tagColumns),
+		goleri.NewOptional(NoGid, whereTag),
 	)
 	listPools := goleri.NewSequence(
 		GidListPools,
@@ -1559,6 +1656,7 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewChoice(
 			NoGid,
 			false,
+			alterSeries,
 			alterUser,
 			alterGroup,
 			alterServer,
@@ -1582,6 +1680,7 @@ func SiriGrammar() *goleri.Grammar {
 			countShards,
 			countShardsSize,
 			countUsers,
+			countTags,
 			countSeriesLength,
 		),
 	)
@@ -1602,6 +1701,7 @@ func SiriGrammar() *goleri.Grammar {
 			NoGid,
 			false,
 			dropGroup,
+			dropTag,
 			dropSeries,
 			dropShards,
 			dropServer,
@@ -1626,6 +1726,7 @@ func SiriGrammar() *goleri.Grammar {
 			NoGid,
 			false,
 			listSeries,
+			listTags,
 			listUsers,
 			listShards,
 			listGroups,
