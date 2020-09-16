@@ -4,7 +4,7 @@ package main
 // should be used with the goleri module.
 //
 // Source class: SiriGrammar
-// Created at: 2020-07-30 10:55:51
+// Created at: 2020-09-15 15:01:47
 
 import (
 	"regexp"
@@ -60,6 +60,7 @@ const (
 	GidFDifference          = iota
 	GidFFilter              = iota
 	GidFFirst               = iota
+	GidFInterval            = iota
 	GidFLast                = iota
 	GidFLimit               = iota
 	GidFMax                 = iota
@@ -72,6 +73,7 @@ const (
 	GidFPvariance           = iota
 	GidFStddev              = iota
 	GidFSum                 = iota
+	GidFTimeval             = iota
 	GidFVariance            = iota
 	GidGrantStmt            = iota
 	GidGrantUser            = iota
@@ -171,6 +173,7 @@ const (
 	GidKInsert              = iota
 	GidKInteger             = iota
 	GidKIntersection        = iota
+	GidKInterval            = iota
 	GidKIpSupport           = iota
 	GidKLast                = iota
 	GidKLength              = iota
@@ -234,6 +237,7 @@ const (
 	GidKTeePipeName         = iota
 	GidKTimePrecision       = iota
 	GidKTimeit              = iota
+	GidKTimeval             = iota
 	GidKTimezone            = iota
 	GidKTo                  = iota
 	GidKTrue                = iota
@@ -398,6 +402,7 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewToken(NoGid, "&"),
 		goleri.NewKeyword(NoGid, "intersection", false),
 	)
+	kInterval := goleri.NewKeyword(GidKInterval, "interval", false)
 	kIpSupport := goleri.NewKeyword(GidKIpSupport, "ip_support", false)
 	kLast := goleri.NewKeyword(GidKLast, "last", false)
 	kLength := goleri.NewKeyword(GidKLength, "length", false)
@@ -470,9 +475,10 @@ func SiriGrammar() *goleri.Grammar {
 	kTag := goleri.NewKeyword(GidKTag, "tag", false)
 	kTags := goleri.NewKeyword(GidKTags, "tags", false)
 	kTeePipeName := goleri.NewKeyword(GidKTeePipeName, "tee_pipe_name", false)
-	kTimeit := goleri.NewKeyword(GidKTimeit, "timeit", false)
-	kTimezone := goleri.NewKeyword(GidKTimezone, "timezone", false)
 	kTimePrecision := goleri.NewKeyword(GidKTimePrecision, "time_precision", false)
+	kTimeit := goleri.NewKeyword(GidKTimeit, "timeit", false)
+	kTimeval := goleri.NewKeyword(GidKTimeval, "timeval", false)
+	kTimezone := goleri.NewKeyword(GidKTimezone, "timezone", false)
 	kTo := goleri.NewKeyword(GidKTo, "to", false)
 	kTrue := goleri.NewKeyword(GidKTrue, "true", false)
 	kType := goleri.NewKeyword(GidKType, "type", false)
@@ -1225,6 +1231,18 @@ func SiriGrammar() *goleri.Grammar {
 		goleri.NewOptional(NoGid, timeExpr),
 		goleri.NewToken(NoGid, ")"),
 	)
+	fTimeval := goleri.NewSequence(
+		GidFTimeval,
+		kTimeval,
+		goleri.NewToken(NoGid, "("),
+		goleri.NewToken(NoGid, ")"),
+	)
+	fInterval := goleri.NewSequence(
+		GidFInterval,
+		kInterval,
+		goleri.NewToken(NoGid, "("),
+		goleri.NewToken(NoGid, ")"),
+	)
 	fFilter := goleri.NewSequence(
 		GidFFilter,
 		kFilter,
@@ -1286,6 +1304,8 @@ func SiriGrammar() *goleri.Grammar {
 		fStddev,
 		fFirst,
 		fLast,
+		fTimeval,
+		fInterval,
 		fDifference,
 		fDerivative,
 		fFilter,
