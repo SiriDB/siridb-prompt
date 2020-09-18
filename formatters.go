@@ -30,6 +30,8 @@ func getFormatter(s string) func(i interface{}) string {
 		return fmtTimeit
 	case "expiration_num", "expiration_log":
 		return fmtExpiration
+	case "shard_duration":
+		return fmtShardDuration
 	default:
 		return func(i interface{}) string { return fmt.Sprint(i) }
 	}
@@ -209,6 +211,24 @@ func fmtDuration(i interface{}) string {
 			return fmt.Sprintf("%d months", seconds/2592000)
 		}
 		return fmt.Sprintf("%d years", seconds/31557600)
+	}
+	return fmt.Sprint(i)
+}
+
+func fmtShardDuration(i interface{}) string {
+	seconds, ok := i.(int)
+	if ok {
+		var hours = seconds / 3600
+
+		if hours < 24 {
+			return fmt.Sprintf("%dh", hours)
+		}
+
+		if hours%24 > 0 {
+			return fmt.Sprintf("%dd %dh", hours/24, hours%24)
+		}
+
+		return fmt.Sprintf("%dd", hours/24)
 	}
 	return fmt.Sprint(i)
 }
