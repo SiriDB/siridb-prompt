@@ -4,7 +4,7 @@ package main
 // should be used with the goleri module.
 //
 // Source class: SiriGrammar
-// Created at: 2022-04-15 12:10:03
+// Created at: 2022-05-05 15:08:05
 
 import (
 	"regexp"
@@ -81,6 +81,7 @@ const (
 	GidGroupColumns         = iota
 	GidGroupName            = iota
 	GidGroupTagMatch        = iota
+	GidHeadExpr             = iota
 	GidHelpAccess           = iota
 	GidHelpAlter            = iota
 	GidHelpAlterDatabase    = iota
@@ -165,6 +166,7 @@ const (
 	GidKGrant               = iota
 	GidKGroup               = iota
 	GidKGroups              = iota
+	GidKHead                = iota
 	GidKHelp                = iota
 	GidKIdlePercentage      = iota
 	GidKIdleTime            = iota
@@ -236,6 +238,7 @@ const (
 	GidKSyncProgress        = iota
 	GidKTag                 = iota
 	GidKTags                = iota
+	GidKTail                = iota
 	GidKTee                 = iota
 	GidKTimePrecision       = iota
 	GidKTimeit              = iota
@@ -318,6 +321,7 @@ const (
 	GidTagColumns           = iota
 	GidTagName              = iota
 	GidTagSeries            = iota
+	GidTailExpr             = iota
 	GidTimeExpr             = iota
 	GidTimeitStmt           = iota
 	GidUntagSeries          = iota
@@ -355,9 +359,9 @@ func SiriGrammar() *goleri.Grammar {
 	kAs := goleri.NewKeyword(GidKAs, "as", false)
 	kBackupMode := goleri.NewKeyword(GidKBackupMode, "backup_mode", false)
 	kBefore := goleri.NewKeyword(GidKBefore, "before", false)
-	kBufferSize := goleri.NewKeyword(GidKBufferSize, "buffer_size", false)
-	kBufferPath := goleri.NewKeyword(GidKBufferPath, "buffer_path", false)
 	kBetween := goleri.NewKeyword(GidKBetween, "between", false)
+	kBufferPath := goleri.NewKeyword(GidKBufferPath, "buffer_path", false)
+	kBufferSize := goleri.NewKeyword(GidKBufferSize, "buffer_size", false)
 	kCount := goleri.NewKeyword(GidKCount, "count", false)
 	kCreate := goleri.NewKeyword(GidKCreate, "create", false)
 	kCritical := goleri.NewKeyword(GidKCritical, "critical", false)
@@ -387,6 +391,7 @@ func SiriGrammar() *goleri.Grammar {
 	kGrant := goleri.NewKeyword(GidKGrant, "grant", false)
 	kGroup := goleri.NewKeyword(GidKGroup, "group", false)
 	kGroups := goleri.NewKeyword(GidKGroups, "groups", false)
+	kHead := goleri.NewKeyword(GidKHead, "head", false)
 	kHelp := goleri.NewChoice(
 		GidKHelp,
 		true,
@@ -477,6 +482,7 @@ func SiriGrammar() *goleri.Grammar {
 	kSyncProgress := goleri.NewKeyword(GidKSyncProgress, "sync_progress", false)
 	kTag := goleri.NewKeyword(GidKTag, "tag", false)
 	kTags := goleri.NewKeyword(GidKTags, "tags", false)
+	kTail := goleri.NewKeyword(GidKTail, "tail", false)
 	kTee := goleri.NewKeyword(GidKTee, "tee", false)
 	kTimePrecision := goleri.NewKeyword(GidKTimePrecision, "time_precision", false)
 	kTimeit := goleri.NewKeyword(GidKTimeit, "timeit", false)
@@ -1110,6 +1116,16 @@ func SiriGrammar() *goleri.Grammar {
 		timeExpr,
 		kAnd,
 		timeExpr,
+	)
+	headExpr := goleri.NewSequence(
+		GidHeadExpr,
+		kHead,
+		intExpr,
+	)
+	tailExpr := goleri.NewSequence(
+		GidTailExpr,
+		kTail,
+		intExpr,
 	)
 	accessExpr := goleri.NewList(GidAccessExpr, accessKeywords, goleri.NewToken(NoGid, ","), 1, 0, false)
 	prefixExpr := goleri.NewSequence(
@@ -1792,6 +1808,8 @@ func SiriGrammar() *goleri.Grammar {
 			afterExpr,
 			betweenExpr,
 			beforeExpr,
+			tailExpr,
+			headExpr,
 		)),
 		goleri.NewOptional(NoGid, mergeAs),
 	)
